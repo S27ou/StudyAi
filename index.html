@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مساعدي الدراسي الذكي</title>
+  <style>
+    *{box-sizing:border-box}
+    :root{
+      --bg:#050505;--card:#0d0d0f;--card2:#111114;--line:#25252a;
+      --text:#f5f5f5;--muted:#a4a4ad;--accent:#8b5cf6;--accent2:#6d28d9;
+      --ok:#22c55e;--bad:#ef4444;--shadow:0 18px 60px rgba(0,0,0,.35)
+    }
+    body{margin:0;background:radial-gradient(circle at 50% -20%,#171020 0,#050505 42%);color:var(--text);font-family:Tahoma,Arial,sans-serif;min-height:100vh}
+    .wrap{width:min(1100px,94%);margin:auto;padding:30px 0 60px}
+    header{text-align:center;margin:10px 0 28px}
+    .logo{width:68px;height:68px;border-radius:20px;display:grid;place-items:center;margin:0 auto 14px;background:linear-gradient(135deg,#8b5cf6,#4c1d95);font-size:32px;box-shadow:0 15px 40px #000}
+    h1{font-size:34px;margin:0 0 8px}
+    .sub{color:var(--muted);margin:0;line-height:1.8}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .card{background:linear-gradient(180deg,rgba(18,18,21,.96),rgba(10,10,12,.96));border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:var(--shadow)}
+    .full{grid-column:1/-1}
+    .title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+    .title h2{font-size:20px;margin:0}
+    .badge{font-size:12px;color:#ddd;background:#1b1b20;border:1px solid #303038;padding:7px 10px;border-radius:999px}
+    .drop{border:1.5px dashed #3a3a43;border-radius:18px;padding:28px;text-align:center;cursor:pointer;background:#0a0a0c;transition:.2s}
+    .drop:hover,.drop.drag{border-color:var(--accent);background:#0d0914}
+    .drop strong{display:block;font-size:18px;margin-bottom:8px}
+    .drop span{color:var(--muted);font-size:13px}
+    input[type=file]{display:none}
+    .files{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:14px}
+    .file{border:1px solid var(--line);background:#09090b;border-radius:14px;padding:10px;overflow:hidden}
+    .file img{width:100%;height:100px;object-fit:cover;border-radius:10px;display:block;background:#15151a}
+    .file p{margin:8px 2px 0;font-size:12px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    button{border:0;border-radius:13px;padding:12px 17px;font-size:15px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));transition:.18s}
+    button:hover{transform:translateY(-1px);filter:brightness(1.08)}
+    button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+    .ghost{background:#17171b;border:1px solid #2c2c33;color:#eee}
+    .danger{background:#261012;border:1px solid #4a1c20;color:#ffb3b8}
+    .status{margin-top:14px;color:var(--muted);font-size:13px;min-height:20px}
+    .loader{display:none;align-items:center;gap:10px;margin-top:12px;color:#d8ccff}
+    .loader.show{display:flex}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px var(--accent);animation:pulse 1s infinite}
+    @keyframes pulse{50%{opacity:.25;transform:scale(.7)}}
+    .result{line-height:2;font-size:15px;color:#e9e9ee}
+    .result h3{font-size:18px;margin:0 0 8px;color:#fff}
+    .result ul{margin:8px 0 18px;padding-right:22px}
+    .result li{margin:6px 0}
+    .term-grid{display:flex;flex-wrap:wrap;gap:8px}
+    .term{background:#15111d;border:1px solid #33284a;border-radius:999px;padding:7px 11px;font-size:13px}
+    .empty{color:#777;text-align:center;padding:35px 10px}
+    .quiz-list{display:grid;gap:14px}
+    .q{background:#0a0a0d;border:1px solid var(--line);border-radius:16px;padding:16px}
+    .qhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .qnum{font-weight:800}
+    .qtype{font-size:11px;color:#cfc4ff;background:#1a1427;border:1px solid #33284a;border-radius:999px;padding:5px 8px;white-space:nowrap}
+    .qtext{font-size:16px;line-height:1.8;margin:10px 0}
+    .choices{display:grid;gap:8px}
+    .choice{background:#111116;border:1px solid #2a2a31;color:#eee;text-align:right;font-weight:500}
+    .choice.selected{border-color:var(--accent);background:#1a1328}
+    .written{width:100%;background:#101014;color:#fff;border:1px solid #2c2c33;border-radius:12px;padding:12px;outline:none;font-family:inherit}
+    .written:focus{border-color:var(--accent)}
+    .feedback{margin-top:10px;font-size:13px;padding:9px 11px;border-radius:10px;display:none}
+    .feedback.show{display:block}
+    .correct{background:#0d2114;border:1px solid #174d2a;color:#9cf0b1}
+    .wrong{background:#240e11;border:1px solid #5b1e25;color:#ffb0b8}
+    .score{font-size:28px;font-weight:900;text-align:center;padding:18px;border:1px solid var(--line);border-radius:16px;background:#0a0a0d;margin-bottom:15px}
+    .score small{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:4px}
+    .hidden{display:none!important}
+    .error{color:#ffb0b8;background:#210d10;border:1px solid #551a20;padding:12px;border-radius:12px;line-height:1.8}
+    .note{font-size:12px;color:#888;line-height:1.8;margin-top:10px}
+    @media(max-width:760px){.grid{grid-template-columns:1fr}.full{grid-column:auto}h1{font-size:27px}.wrap{width:92%}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">🧠</div>
+    <h1>مساعدي الدراسي الذكي</h1>
+    <p class="sub">ارفع صور الدرس، والذكاء الاصطناعي يفهم المحتوى ويجهز لك ملخصًا وشرحًا واختبارًا متنوعًا.</p>
+  </header>
+
+  <div class="grid">
+    <section class="card full">
+      <div class="title">
+        <h2>📚 صور الدرس</h2>
+        <span class="badge">AI Vision</span>
+      </div>
+
+      <label class="drop" id="dropZone" for="images">
+        <strong>اسحب الصور هنا أو اضغط لاختيارها</strong>
+        <span>يمكنك رفع أكثر من صفحة — JPG / PNG / WEBP</span>
+      </label>
+      <input id="images" type="file" accept="image/*" multiple>
+      <div id="files" class="files"></div>
+
+      <div class="actions">
+        <button id="analyzeBtn" disabled>✨ حلّل الدرس بالذكاء الاصطناعي</button>
+        <button id="clearBtn" class="ghost" type="button">مسح الصور</button>
+      </div>
+      <div id="status" class="status"></div>
+      <div id="loader" class="loader"><span class="dot"></span><span id="loaderText">جاري فهم الدرس...</span></div>
+      <div class="note">نصيحة: صوّر الصفحة بشكل مستقيم وواضح، وتأكد أن الكتابة كاملة داخل الصورة.</div>
+    </section>
+
+    <section class="card">
+      <div class="title"><h2>📝 الملخص المهم</h2><span class="badge">مختصر</span></div>
+      <div id="summary" class="result empty">ارفع صور الدرس ثم اضغط تحليل.</div>
+    </section>
+
+    <section class="card">
+      <div class="title"><h2>💡 الشرح المبسط</h2><span class="badge">بأسلوب سهل</span></div>
+      <div id="explanation" class="result empty">سيظهر هنا شرح يفهمك الفكرة خطوة بخطوة.</div>
+    </section>
+
+    <section class="card">
+      <div class="title"><h2>⭐ أهم المعلومات</h2><span class="badge">للحفظ</span></div>
+      <div id="important" class="result empty">سيتم استخراج أهم النقاط والتعريفات.</div>
+    </section>
+
+    <section class="card">
+      <div class="title"><h2>🔑 الكلمات والمصطلحات</h2><span class="badge">مفيدة للمراجعة</span></div>
+      <div id="terms" class="result empty">ستظهر المصطلحات المهمة هنا.</div>
+    </section>
+
+    <section class="card full">
+      <div class="title"><h2>🎯 الاختبار</h2><span class="badge">كتابي + اختياري</span></div>
+      <div id="quiz" class="empty">بعد تحليل الدرس سيُنشأ اختبار من محتوى الصور نفسها.</div>
+      <div id="quizActions" class="actions hidden">
+        <button id="gradeBtn">✅ تصحيح الاختبار</button>
+        <button id="newQuizBtn" class="ghost">🔄 إنشاء اختبار جديد</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const imagesInput = document.getElementById('images');
+const filesEl = document.getElementById('files');
+const dropZone = document.getElementById('dropZone');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const clearBtn = document.getElementById('clearBtn');
+const statusEl = document.getElementById('status');
+const loader = document.getElementById('loader');
+const loaderText = document.getElementById('loaderText');
+const quizActions = document.getElementById('quizActions');
+const gradeBtn = document.getElementById('gradeBtn');
+const newQuizBtn = document.getElementById('newQuizBtn');
+
+let selectedFiles = [];
+let studyData = null;
+
+function setStatus(text, error=false){
+  statusEl.innerHTML = error ? `<div class="error">${escapeHtml(text)}</div>` : escapeHtml(text);
+}
+function escapeHtml(v){
+  return String(v ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+function renderFiles(){
+  filesEl.innerHTML='';
+  selectedFiles.forEach((file,i)=>{
+    const box=document.createElement('div');
+    box.className='file';
+    const img=document.createElement('img');
+    img.src=URL.createObjectURL(file);
+    const p=document.createElement('p');
+    p.textContent=`${i+1}. ${file.name}`;
+    box.append(img,p);
+    filesEl.appendChild(box);
+  });
+  analyzeBtn.disabled=selectedFiles.length===0;
+}
+function addFiles(files){
+  const incoming=[...files].filter(f=>f.type.startsWith('image/'));
+  selectedFiles=[...selectedFiles,...incoming].slice(0,20);
+  renderFiles();
+  setStatus(selectedFiles.length ? `تم اختيار ${selectedFiles.length} صورة.` : '');
+}
+imagesInput.addEventListener('change',e=>addFiles(e.target.files));
+['dragenter','dragover'].forEach(ev=>dropZone.addEventListener(ev,e=>{e.preventDefault();dropZone.classList.add('drag')}));
+['dragleave','drop'].forEach(ev=>dropZone.addEventListener(ev,e=>{e.preventDefault();dropZone.classList.remove('drag')}));
+dropZone.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+
+clearBtn.addEventListener('click',()=>{
+  selectedFiles=[]; imagesInput.value=''; studyData=null; renderFiles();
+  ['summary','explanation','important','terms','quiz'].forEach(id=>document.getElementById(id).innerHTML='<div class="empty">بانتظار صور الدرس.</div>');
+  quizActions.classList.add('hidden'); setStatus('');
+});
+
+function showList(items){
+  if(!Array.isArray(items)||!items.length) return '<div class="empty">لا توجد معلومات كافية.</div>';
+  return `<ul>${items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>`;
+}
+
+function renderStudy(data){
+  document.getElementById('summary').innerHTML=`<div>${escapeHtml(data.summary || '')}</div>`;
+  document.getElementById('explanation').innerHTML=`<div>${escapeHtml(data.explanation || '')}</div>`;
+  document.getElementById('important').innerHTML=showList(data.important_points);
+  const terms=Array.isArray(data.key_terms)?data.key_terms:[];
+  document.getElementById('terms').innerHTML=terms.length
+    ? `<div class="term-grid">${terms.map(t=>`<span class="term">${escapeHtml(t)}</span>`).join('')}</div>`
+    : '<div class="empty">لا توجد مصطلحات واضحة.</div>';
+  renderQuiz(data.quiz || []);
+}
+
+function renderQuiz(quiz){
+  if(!quiz.length){ document.getElementById('quiz').innerHTML='<div class="empty">لم يتم إنشاء أسئلة.</div>'; quizActions.classList.add('hidden'); return; }
+  document.getElementById('quiz').innerHTML=`<div class="quiz-list">${quiz.map((q,i)=>{
+    const type=q.type==='choice'?'اختياري':'كتابي';
+    const answerId=`answer-${i}`;
+    let body='';
+    if(q.type==='choice'){
+      body=`<div class="choices">${(q.options||[]).map((op,j)=>`<button type="button" class="choice" data-q="${i}" data-value="${escapeHtml(op)}">${escapeHtml(op)}</button>`).join('')}</div>`;
+    }else{
+      body=`<input class="written" id="${answerId}" placeholder="اكتب إجابتك هنا...">`;
+    }
+    return `<div class="q" data-index="${i}">
+      <div class="qhead"><span class="qnum">السؤال ${i+1}</span><span class="qtype">${type}</span></div>
+      <div class="qtext">${escapeHtml(q.question)}</div>${body}
+      <div class="feedback" id="feedback-${i}"></div>
+    </div>`;
+  }).join('')}</div>`;
+
+  document.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const q=btn.dataset.q;
+      document.querySelectorAll(`.choice[data-q="${q}"]`).forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+  quizActions.classList.remove('hidden');
+}
+
+function normalize(s){
+  return String(s||'').toLowerCase()
+    .replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه')
+    .replace(/[ًٌٍَُِّْـ]/g,'').replace(/[^\u0600-\u06FFa-z0-9\s]/gi,'')
+    .replace(/\s+/g,' ').trim();
+}
+function gradeQuiz(){
+  if(!studyData?.quiz?.length) return;
+  let score=0;
+  studyData.quiz.forEach((q,i)=>{
+    let user='';
+    if(q.type==='choice'){
+      user=document.querySelector(`.choice[data-q="${i}"].selected`)?.dataset.value || '';
+    }else{
+      user=document.getElementById(`answer-${i}`)?.value || '';
+    }
+    const u=normalize(user), a=normalize(q.answer);
+    const accepted=[a,...(q.accepted_answers||[])].map(normalize).filter(Boolean);
+    const correct=accepted.some(x=>u===x || (u.length>=3 && (u.includes(x)||x.includes(u))));
+    const fb=document.getElementById(`feedback-${i}`);
+    fb.className='feedback show '+(correct?'correct':'wrong');
+    if(correct){score++;fb.textContent='✅ إجابة صحيحة';}
+    else fb.innerHTML=`❌ غير صحيحة — الإجابة: <strong>${escapeHtml(q.answer)}</strong>`;
+  });
+  const box=document.createElement('div');
+  box.className='score';
+  box.innerHTML=`${score} / ${studyData.quiz.length}<small>نتيجتك في الاختبار</small>`;
+  const old=document.querySelector('.score'); if(old) old.remove();
+  document.getElementById('quiz').prepend(box);
+  box.scrollIntoView({behavior:'smooth',block:'center'});
+}
+gradeBtn.addEventListener('click',gradeQuiz);
+
+newQuizBtn.addEventListener('click',()=>{
+  if(!studyData) return;
+  renderQuiz(studyData.quiz || []);
+  document.getElementById('quiz').scrollIntoView({behavior:'smooth'});
+});
+
+analyzeBtn.addEventListener('click',async()=>{
+  if(!selectedFiles.length) return;
+  analyzeBtn.disabled=true; clearBtn.disabled=true; loader.classList.add('show');
+  loaderText.textContent='جاري إرسال الصور للذكاء الاصطناعي وفهم الدرس...';
+  setStatus('جاري التحليل...');
+  try{
+    const form=new FormData();
+    selectedFiles.forEach(f=>form.append('images',f));
+    const res=await fetch('/api/analyze',{method:'POST',body:form});
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error || 'حدث خطأ غير معروف');
+    studyData=data;
+    renderStudy(data);
+    setStatus(`تم تحليل ${selectedFiles.length} صورة بنجاح ✅`);
+  }catch(err){
+    console.error(err);
+    setStatus(err.message || 'تعذر تحليل الصور.',true);
+  }finally{
+    analyzeBtn.disabled=selectedFiles.length===0; clearBtn.disabled=false; loader.classList.remove('show');
+  }
+});
+</script>
+</body>
+</html>
