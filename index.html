@@ -1202,6 +1202,224 @@
         bottom: 15px;
       }
     }
+    /* ===== Study Plan + Progress Panels ===== */
+    .feature-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(5px);
+      z-index: 300;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .feature-overlay.open {
+      display: flex;
+      animation: fadeIn .2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .feature-panel {
+      width: min(760px, 100%);
+      max-height: min(86vh, 760px);
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      background: var(--card2);
+      box-shadow: 0 25px 80px rgba(0,0,0,.45);
+      padding: 22px;
+      animation: panelIn .22s ease;
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(12px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .feature-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .feature-header h2 {
+      font-size: 22px;
+      margin-bottom: 4px;
+    }
+
+    .feature-header p {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .feature-close {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 18px;
+    }
+
+    .plan-form {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .7fr auto;
+      gap: 9px;
+      margin-bottom: 18px;
+    }
+
+    .feature-input,
+    .feature-select {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 11px 12px;
+      outline: none;
+    }
+
+    .feature-input:focus,
+    .feature-select:focus {
+      border-color: var(--primary);
+    }
+
+    .plan-days {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(95px, 1fr));
+      gap: 9px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .plan-day {
+      min-height: 150px;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background: rgba(22,140,255,.045);
+      padding: 11px;
+    }
+
+    .plan-day h4 {
+      margin-bottom: 9px;
+      font-size: 13px;
+    }
+
+    .plan-task {
+      position: relative;
+      padding: 9px;
+      margin-top: 7px;
+      border-radius: 11px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .plan-task small {
+      display: block;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .plan-task button {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      width: 22px;
+      height: 22px;
+      border: 0;
+      border-radius: 7px;
+      background: rgba(255,85,119,.12);
+      color: var(--danger);
+      cursor: pointer;
+    }
+
+    .empty-plan {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.7;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    .progress-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .progress-stat {
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background: rgba(22,140,255,.05);
+      padding: 17px;
+      text-align: center;
+    }
+
+    .progress-stat .big {
+      display: block;
+      font-size: 27px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .progress-stat span:last-child {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .progress-track {
+      height: 14px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(120,170,255,.12);
+      border: 1px solid var(--border);
+      margin: 10px 0 7px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg,var(--primary),var(--primary2));
+      transition: width .5s ease;
+    }
+
+    .progress-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    @media(max-width:700px) {
+      .plan-form {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .plan-form .primary-button {
+        grid-column: 1 / -1;
+      }
+
+      .plan-days {
+        grid-template-columns: repeat(7, 120px);
+      }
+
+      .progress-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -1246,12 +1464,12 @@
         مساعد الذكاء
       </button>
 
-      <button onclick="showToast('ميزة خطط المذاكرة قادمة قريبًا 🚀')">
+      <button onclick="openStudyPlan()">
         <span class="nav-icon">📅</span>
         خطط المذاكرة
       </button>
 
-      <button onclick="showToast('الإحصائيات المتقدمة قادمة قريبًا 📊')">
+      <button onclick="openProgress()">
         <span class="nav-icon">📈</span>
         متابعة المستوى
       </button>
@@ -1656,6 +1874,83 @@
     </section>
 
   </main>
+
+
+  <!-- Study Plan -->
+  <div class="feature-overlay" id="studyPlanOverlay" onclick="closeStudyPlan(event)">
+    <section class="feature-panel" onclick="event.stopPropagation()">
+      <div class="feature-header">
+        <div>
+          <h2>📅 خطة المذاكرة</h2>
+          <p>أنشئ جدولك الأسبوعي واحفظه تلقائيًا على جهازك.</p>
+        </div>
+        <button class="feature-close" onclick="closeStudyPlan()">✕</button>
+      </div>
+
+      <div class="plan-form">
+        <input class="feature-input" id="planSubject" placeholder="المادة أو المهمة">
+        <select class="feature-select" id="planDay">
+          <option value="0">السبت</option>
+          <option value="1">الأحد</option>
+          <option value="2">الاثنين</option>
+          <option value="3">الثلاثاء</option>
+          <option value="4">الأربعاء</option>
+          <option value="5">الخميس</option>
+          <option value="6">الجمعة</option>
+        </select>
+        <input class="feature-input" id="planMinutes" type="number" min="5" step="5" value="30" placeholder="دقائق">
+        <button class="primary-button" onclick="addStudyTask()">+ إضافة</button>
+      </div>
+
+      <div class="plan-days" id="planDays"></div>
+
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:15px;">
+        <button class="secondary-button" onclick="clearStudyPlan()">🗑️ حذف الخطة</button>
+        <button class="secondary-button" onclick="fillSamplePlan()">✨ خطة مقترحة</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Progress -->
+  <div class="feature-overlay" id="progressOverlay" onclick="closeProgress(event)">
+    <section class="feature-panel" onclick="event.stopPropagation()">
+      <div class="feature-header">
+        <div>
+          <h2>📈 متابعة المستوى</h2>
+          <p>إحصائياتك الحالية من نشاط الموقع والاختبارات.</p>
+        </div>
+        <button class="feature-close" onclick="closeProgress()">✕</button>
+      </div>
+
+      <div class="progress-grid">
+        <div class="progress-stat">
+          <span class="big" id="progressLessons">0</span>
+          <span>الدروس المحللة</span>
+        </div>
+        <div class="progress-stat">
+          <span class="big" id="progressTests">0</span>
+          <span>الاختبارات المكتملة</span>
+        </div>
+        <div class="progress-stat">
+          <span class="big" id="progressAccuracy">0%</span>
+          <span>متوسط الإنجاز</span>
+        </div>
+      </div>
+
+      <div class="result-card" style="padding:18px;">
+        <h3>🎯 مستوى الإنجاز</h3>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-note" id="progressMessage">ابدأ بتحليل درس وحل اختبار لرفع مستواك.</div>
+      </div>
+
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:15px;">
+        <button class="primary-button" onclick="refreshProgress()">🔄 تحديث</button>
+        <button class="secondary-button" onclick="closeProgress()">إغلاق</button>
+      </div>
+    </section>
+  </div>
 
   <!-- Appearance -->
   <div
@@ -3141,6 +3436,176 @@
           .remove("show");
       }
     }
+
+
+    /* =========================
+       Study Plan
+    ========================== */
+
+    const PLAN_DAYS = [
+      "السبت",
+      "الأحد",
+      "الاثنين",
+      "الثلاثاء",
+      "الأربعاء",
+      "الخميس",
+      "الجمعة"
+    ];
+
+    function getStudyPlan() {
+      try {
+        return JSON.parse(localStorage.getItem("studyAI_plan") || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveStudyPlan(plan) {
+      localStorage.setItem("studyAI_plan", JSON.stringify(plan));
+    }
+
+    function openStudyPlan() {
+      $("studyPlanOverlay").classList.add("open");
+      renderStudyPlan();
+      $("sidebar").classList.remove("open");
+    }
+
+    function closeStudyPlan(event) {
+      if (event && event.target !== $("studyPlanOverlay")) return;
+      $("studyPlanOverlay").classList.remove("open");
+    }
+
+    function addStudyTask() {
+      const subject = $("planSubject").value.trim();
+      const day = Number($("planDay").value);
+      const minutes = Math.max(5, Number($("planMinutes").value) || 30);
+
+      if (!subject) {
+        showToast("اكتب اسم المادة أو المهمة أولًا ✍️");
+        $("planSubject").focus();
+        return;
+      }
+
+      const plan = getStudyPlan();
+      plan.push({
+        id: Date.now(),
+        subject,
+        day,
+        minutes
+      });
+
+      saveStudyPlan(plan);
+      $("planSubject").value = "";
+      renderStudyPlan();
+      showToast("تمت إضافة المهمة إلى الخطة ✅");
+    }
+
+    function deleteStudyTask(id) {
+      const plan = getStudyPlan().filter(task => task.id !== id);
+      saveStudyPlan(plan);
+      renderStudyPlan();
+      showToast("تم حذف المهمة 🗑️");
+    }
+
+    function clearStudyPlan() {
+      if (!getStudyPlan().length) {
+        showToast("الخطة فارغة أصلًا.");
+        return;
+      }
+
+      if (!confirm("هل تريد حذف خطة المذاكرة بالكامل؟")) return;
+
+      saveStudyPlan([]);
+      renderStudyPlan();
+      showToast("تم حذف خطة المذاكرة.");
+    }
+
+    function fillSamplePlan() {
+      const sample = [
+        {id: Date.now()+1, subject:"رياضيات — مراجعة", day:0, minutes:45},
+        {id: Date.now()+2, subject:"إنجليزي — كلمات", day:1, minutes:30},
+        {id: Date.now()+3, subject:"علوم — درس جديد", day:2, minutes:45},
+        {id: Date.now()+4, subject:"رياضيات — تمارين", day:3, minutes:40},
+        {id: Date.now()+5, subject:"إنجليزي — قراءة", day:4, minutes:30},
+        {id: Date.now()+6, subject:"مراجعة أسبوعية", day:5, minutes:60}
+      ];
+
+      saveStudyPlan(sample);
+      renderStudyPlan();
+      showToast("تم إنشاء خطة مقترحة ✨");
+    }
+
+    function renderStudyPlan() {
+      const container = $("planDays");
+      if (!container) return;
+
+      const plan = getStudyPlan();
+
+      container.innerHTML = PLAN_DAYS.map((day, index) => {
+        const tasks = plan.filter(task => Number(task.day) === index);
+
+        return `
+          <div class="plan-day">
+            <h4>${day}</h4>
+            ${
+              tasks.length
+                ? tasks.map(task => `
+                  <div class="plan-task">
+                    <button onclick="deleteStudyTask(${task.id})" title="حذف">×</button>
+                    <strong>${escapeHtml(task.subject)}</strong>
+                    <small>⏱️ ${task.minutes} دقيقة</small>
+                  </div>
+                `).join("")
+                : `<div class="empty-plan">لا توجد مهام</div>`
+            }
+          </div>
+        `;
+      }).join("");
+    }
+
+    /* =========================
+       Progress
+    ========================== */
+
+    function openProgress() {
+      $("progressOverlay").classList.add("open");
+      refreshProgress();
+      $("sidebar").classList.remove("open");
+    }
+
+    function closeProgress(event) {
+      if (event && event.target !== $("progressOverlay")) return;
+      $("progressOverlay").classList.remove("open");
+    }
+
+    function refreshProgress() {
+      const lessons = Number(localStorage.getItem("studyAI_lessons") || 0);
+      const tests = Number(localStorage.getItem("studyAI_tests") || 0);
+      const accuracy = Number(localStorage.getItem("studyAI_accuracy") || 0);
+
+      $("progressLessons").textContent = lessons;
+      $("progressTests").textContent = tests;
+      $("progressAccuracy").textContent = accuracy + "%";
+
+      // مؤشر بسيط يجمع النشاط + دقة الاختبارات، بحد أقصى 100%.
+      const activity = Math.min(50, lessons * 10 + tests * 5);
+      const score = Math.round(Math.min(100, activity + accuracy / 2));
+
+      $("progressFill").style.width = score + "%";
+
+      let message = "ابدأ بتحليل درس وحل اختبار لرفع مستواك.";
+      if (score >= 80) {
+        message = "ممتاز! نشاطك الدراسي قوي جدًا. استمر بالمراجعة المنتظمة 🔥";
+      } else if (score >= 50) {
+        message = "مستواك يتقدم بشكل جيد. زد المراجعة والاختبارات قليلًا 🚀";
+      } else if (lessons || tests) {
+        message = "بداية جيدة! واصل تحليل الدروس وحل الاختبارات 📚";
+      }
+
+      $("progressMessage").textContent =
+        `مؤشر الإنجاز: ${score}% — ${message}`;
+    }
+
 
     /* =========================
        Escape
