@@ -1,1517 +1,1176 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StudyAi — مساعدي الدراسي الذكي</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study AI - مساعد الدراسة الذكي</title>
 
-<style>
-:root{
-  --bg:#07080d;
-  --card:#101116;
-  --card2:#14151c;
-  --line:#292b35;
-  --text:#f5f5fa;
-  --muted:#a9abb8;
-  --purple:#7c3aed;
-  --purple2:#5b21b6;
-  --green:#22c55e;
-  --red:#ef4444;
-  --yellow:#f59e0b;
-}
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-*{
-  box-sizing:border-box;
-}
+    :root {
+      --bg: #080b12;
+      --card: #111722;
+      --card2: #151d2b;
+      --border: #263247;
+      --text: #f5f7fb;
+      --muted: #9aa7bb;
+      --primary: #6c63ff;
+      --primary2: #8b7cff;
+      --green: #20c997;
+      --red: #ff5c6c;
+      --yellow: #ffc857;
+      --blue: #38bdf8;
+    }
 
-body{
-  margin:0;
-  background:
-    radial-gradient(circle at top,#171025 0,#07080d 38%,#05060a 100%);
-  color:var(--text);
-  font-family:Tahoma,Arial,sans-serif;
-}
+    body {
+      margin: 0;
+      font-family: Tahoma, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(108,99,255,.14), transparent 35%),
+        radial-gradient(circle at bottom left, rgba(56,189,248,.08), transparent 30%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
 
-button,
-input,
-textarea{
-  font:inherit;
-}
+    .container {
+      width: min(1150px, 94%);
+      margin: auto;
+      padding: 35px 0 60px;
+    }
 
-.container{
-  width:min(1180px,94%);
-  margin:auto;
-}
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-header{
-  text-align:center;
-  padding:42px 0 24px;
-}
+    header h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 52px);
+      background: linear-gradient(90deg, #8b7cff, #38bdf8);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
 
-.logo{
-  width:68px;
-  height:68px;
-  margin:auto;
-  border-radius:20px;
-  background:linear-gradient(135deg,#8b5cf6,#4c1d95);
-  display:grid;
-  place-items:center;
-  font-size:34px;
-  box-shadow:0 15px 45px #4c1d9566;
-}
+    header p {
+      color: var(--muted);
+      font-size: 17px;
+      margin-top: 12px;
+    }
 
-h1{
-  margin:18px 0 8px;
-  font-size:38px;
-}
+    .card {
+      background: rgba(17, 23, 34, .92);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 15px 45px rgba(0,0,0,.18);
+    }
 
-.subtitle{
-  color:var(--muted);
-  margin:0;
-}
+    .card h2 {
+      margin-top: 0;
+      font-size: 22px;
+    }
 
-.card{
-  background:linear-gradient(180deg,#111218,#0d0e13);
-  border:1px solid var(--line);
-  border-radius:24px;
-  padding:22px;
-  box-shadow:0 15px 50px #0005;
-  margin:18px 0;
-}
+    .upload {
+      border: 2px dashed #384761;
+      border-radius: 18px;
+      padding: 35px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: .2s;
+    }
 
-.section-title{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  margin-bottom:16px;
-}
+    .upload:hover,
+    .upload.dragging {
+      border-color: var(--primary);
+      background: rgba(108,99,255,.08);
+    }
 
-.section-title h2{
-  margin:0;
-  font-size:23px;
-}
+    .upload-icon {
+      font-size: 50px;
+      margin-bottom: 10px;
+    }
 
-.badge{
-  border:1px solid var(--line);
-  background:#181a22;
-  color:#ddd;
-  border-radius:999px;
-  padding:7px 12px;
-  font-size:13px;
-}
+    .upload strong {
+      display: block;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
 
-.upload-area{
-  display:block;
-  border:2px dashed #3a3c49;
-  border-radius:20px;
-  padding:28px;
-  text-align:center;
-  cursor:pointer;
-  transition:.2s;
-}
+    .upload span {
+      color: var(--muted);
+    }
 
-.upload-area:hover,
-.upload-area.drag{
-  border-color:#8b5cf6;
-  background:#17121f;
-}
+    #imageInput {
+      display: none;
+    }
 
-.upload-area strong{
-  font-size:20px;
-}
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
 
-.upload-area p{
-  color:var(--muted);
-  margin:10px 0;
-}
+    .preview {
+      position: relative;
+      background: var(--card2);
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
 
-.actions{
-  display:flex;
-  gap:10px;
-  justify-content:center;
-  flex-wrap:wrap;
-  margin-top:16px;
-}
+    .preview img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      display: block;
+    }
 
-.btn{
-  border:0;
-  border-radius:13px;
-  padding:12px 18px;
-  cursor:pointer;
-  color:white;
-  background:#252630;
-  transition:.2s;
-}
+    .remove-image {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(0,0,0,.75);
+      color: white;
+      cursor: pointer;
+      font-size: 17px;
+    }
 
-.btn:hover{
-  transform:translateY(-1px);
-}
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
 
-.btn.primary{
-  background:linear-gradient(135deg,#7c3aed,#4c1d95);
-  box-shadow:0 10px 30px #5b21b655;
-}
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: .2s;
+      font-family: inherit;
+    }
 
-.btn.danger{
-  background:#25161a;
-}
+    button:hover {
+      transform: translateY(-1px);
+    }
 
-.btn:disabled{
-  opacity:.5;
-  cursor:not-allowed;
-  transform:none;
-}
+    .primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: white;
+    }
 
-.preview-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-  gap:12px;
-  margin-top:18px;
-}
+    .secondary {
+      background: #202a3b;
+      color: white;
+      border: 1px solid var(--border);
+    }
 
-.preview{
-  position:relative;
-  border:1px solid var(--line);
-  border-radius:14px;
-  overflow:hidden;
-  background:#08090d;
-}
+    .danger {
+      background: rgba(255,92,108,.12);
+      color: #ff8290;
+      border: 1px solid rgba(255,92,108,.3);
+    }
 
-.preview img{
-  width:100%;
-  height:145px;
-  object-fit:cover;
-  display:block;
-}
+    .status {
+      margin-top: 15px;
+      color: var(--muted);
+      min-height: 22px;
+    }
 
-.preview span{
-  position:absolute;
-  top:7px;
-  left:7px;
-  background:#000b;
-  padding:5px 8px;
-  border-radius:9px;
-  font-size:12px;
-}
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      color: #bdb8ff;
+      margin-top: 15px;
+    }
 
-.results{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:16px;
-}
+    .loading.show {
+      display: flex;
+    }
 
-.result-card{
-  background:#101116;
-  border:1px solid var(--line);
-  border-radius:20px;
-  padding:20px;
-  min-height:190px;
-}
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid #30394d;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
 
-.result-card.full{
-  grid-column:1/-1;
-}
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
 
-.result-card h3{
-  margin:0 0 14px;
-  font-size:20px;
-}
+    .results {
+      display: none;
+    }
 
-.result-content{
-  color:#c8cad5;
-  line-height:1.9;
-  white-space:pre-wrap;
-}
+    .results.show {
+      display: block;
+    }
 
-ul{
-  margin:0;
-  padding-right:22px;
-  line-height:2;
-}
+    .result-box {
+      background: #0d131e;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 18px;
+      margin-top: 12px;
+      line-height: 1.9;
+      white-space: pre-wrap;
+    }
 
-.quiz{
-  display:flex;
-  flex-direction:column;
-  gap:15px;
-}
+    .result-box p {
+      margin: 0;
+    }
 
-.question{
-  border:1px solid var(--line);
-  border-radius:18px;
-  padding:18px;
-  background:#0d0f14;
-}
+    .list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
 
-.q-head{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  align-items:flex-start;
-}
+    .list-item {
+      background: #0d131e;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 13px 15px;
+      line-height: 1.8;
+    }
 
-.q-number{
-  color:#a78bfa;
-  font-weight:bold;
-}
+    .number {
+      display: inline-flex;
+      width: 28px;
+      height: 28px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: rgba(108,99,255,.18);
+      color: #aaa3ff;
+      margin-left: 8px;
+      font-weight: bold;
+    }
 
-.q-type{
-  font-size:12px;
-  border:1px solid var(--line);
-  padding:6px 9px;
-  border-radius:999px;
-  color:#c5c7d1;
-}
+    .definition {
+      border-right: 4px solid var(--blue);
+    }
 
-.question-text{
-  font-size:18px;
-  line-height:1.8;
-  margin:12px 0 16px;
-  font-weight:bold;
-}
+    .definition-title {
+      font-weight: bold;
+      color: #7dd3fc;
+      margin-bottom: 5px;
+    }
 
-.options{
-  display:grid;
-  gap:9px;
-}
+    .law {
+      border-right: 4px solid var(--yellow);
+    }
 
-.option{
-  border:1px solid var(--line);
-  background:#171922;
-  color:#eee;
-  border-radius:12px;
-  padding:12px;
-  text-align:right;
-  cursor:pointer;
-  transition:.2s;
-}
+    .law-title {
+      font-weight: bold;
+      color: #ffd76a;
+      margin-bottom: 8px;
+    }
 
-.option:hover{
-  border-color:#8b5cf6;
-}
+    .formula {
+      direction: ltr;
+      text-align: center;
+      font-family: Consolas, monospace;
+      font-size: 20px;
+      background: #090d14;
+      border: 1px solid #303b50;
+      border-radius: 10px;
+      padding: 12px;
+      margin: 10px 0;
+      overflow-x: auto;
+    }
 
-.option.selected{
-  border-color:#8b5cf6;
-  background:#24163e;
-}
+    .terms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 12px;
+    }
 
-.written{
-  width:100%;
-  min-height:110px;
-  resize:vertical;
-  background:#08090d;
-  color:#fff;
-  border:1px solid #343642;
-  border-radius:12px;
-  padding:12px;
-  outline:none;
-}
+    .term {
+      padding: 8px 12px;
+      background: rgba(108,99,255,.12);
+      border: 1px solid rgba(108,99,255,.3);
+      color: #c8c4ff;
+      border-radius: 999px;
+    }
 
-.written:focus{
-  border-color:#8b5cf6;
-}
+    .quiz-question {
+      background: #0d131e;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 15px;
+    }
 
-.truefalse{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
+    .question-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
 
-.grade-box{
-  margin-top:18px;
-  padding:18px;
-  border-radius:16px;
-  background:#151722;
-  border:1px solid var(--line);
-  display:none;
-}
+    .question-number {
+      background: rgba(108,99,255,.2);
+      color: #c4c0ff;
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-weight: bold;
+    }
 
-.grade-big{
-  font-size:30px;
-  font-weight:bold;
-}
+    .question-type {
+      background: #1c2737;
+      color: #aebbd0;
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 13px;
+    }
 
-.correct{
-  border-color:#166534!important;
-  background:#0b2114!important;
-}
+    .question-text {
+      font-size: 17px;
+      line-height: 1.8;
+      margin-bottom: 14px;
+      font-weight: bold;
+    }
 
-.wrong{
-  border-color:#7f1d1d!important;
-  background:#210c0c!important;
-}
+    .options {
+      display: grid;
+      gap: 9px;
+    }
 
-.small{
-  font-size:13px;
-  color:var(--muted);
-}
+    .option-btn {
+      width: 100%;
+      text-align: right;
+      background: #151e2d;
+      color: white;
+      border: 1px solid #2c3950;
+    }
 
-.loading{
-  display:none;
-  text-align:center;
-  padding:22px;
-  color:#c4b5fd;
-}
+    .option-btn.selected {
+      border-color: var(--primary);
+      background: rgba(108,99,255,.18);
+    }
 
-@media(max-width:800px){
+    .written-answer {
+      width: 100%;
+      min-height: 110px;
+      resize: vertical;
+      background: #090e17;
+      color: white;
+      border: 1px solid #2c3950;
+      border-radius: 12px;
+      padding: 13px;
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+    }
 
-  h1{
-    font-size:29px;
-  }
+    .written-answer:focus {
+      border-color: var(--primary);
+    }
 
-  .results{
-    grid-template-columns:1fr;
-  }
+    .grade {
+      display: none;
+      text-align: center;
+      padding: 22px;
+      border-radius: 16px;
+      margin-top: 20px;
+      background: #0d131e;
+      border: 1px solid var(--border);
+    }
 
-  .result-card.full{
-    grid-column:auto;
-  }
+    .grade.show {
+      display: block;
+    }
 
-  .container{
-    width:95%;
-  }
+    .grade-score {
+      font-size: 44px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
 
-}
-</style>
+    .grade-message {
+      color: var(--muted);
+    }
+
+    .correct {
+      border-color: rgba(32,201,151,.7) !important;
+      background: rgba(32,201,151,.08) !important;
+    }
+
+    .wrong {
+      border-color: rgba(255,92,108,.7) !important;
+      background: rgba(255,92,108,.08) !important;
+    }
+
+    .answer-note {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #151d2b;
+      color: var(--muted);
+      display: none;
+      line-height: 1.7;
+    }
+
+    .answer-note.show {
+      display: block;
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 15px;
+    }
+
+    footer {
+      text-align: center;
+      color: #69758a;
+      margin-top: 30px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 650px) {
+      .container {
+        width: 92%;
+        padding-top: 20px;
+      }
+
+      .card {
+        padding: 16px;
+        border-radius: 16px;
+      }
+
+      .upload {
+        padding: 28px 15px;
+      }
+
+      .buttons button {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
 <div class="container">
 
-<header>
+  <header>
+    <h1>Study AI</h1>
+    <p>ارفع صور درسك وخلي الذكاء الاصطناعي يفهمه ويجهز لك كل شيء للمذاكرة 📚</p>
+  </header>
 
-  <div class="logo">
-    🧠
-  </div>
+  <!-- رفع الصور -->
+  <section class="card">
+    <h2>📸 صور الدرس</h2>
 
-  <h1>
-    مساعدي الدراسي الذكي
-  </h1>
-
-  <p class="subtitle">
-    ارفع صور الدرس، والذكاء الاصطناعي يفهم المحتوى ويجهز لك ملخصًا وشرحًا واختبارًا متنوعًا.
-  </p>
-
-</header>
-
-
-<!-- صور الدرس -->
-
-<section class="card">
-
-  <div class="section-title">
-
-    <h2>
-      📸 صور الدرس
-    </h2>
-
-    <span class="badge">
-      AI Vision
-    </span>
-
-  </div>
-
-
-  <label class="upload-area" id="dropArea">
+    <div class="upload" id="uploadArea">
+      <div class="upload-icon">📚</div>
+      <strong>اضغط هنا أو اسحب صور الدرس</strong>
+      <span>يمكنك رفع أكثر من صورة</span>
+    </div>
 
     <input
-      id="fileInput"
       type="file"
-      accept="image/png,image/jpeg,image/webp"
+      id="imageInput"
+      accept="image/*"
       multiple
-      hidden
     >
 
-    <strong>
-      اسحب صور الدرس هنا أو اضغط لاختيارها
-    </strong>
+    <div id="previewGrid" class="preview-grid"></div>
 
-    <p>
-      يمكنك رفع أكثر من صورة — JPG / PNG / WEBP
-    </p>
-
-
-    <div class="actions">
-
-      <button
-        type="button"
-        class="btn primary"
-        id="pickBtn"
-      >
-        📂 اختيار الصور
+    <div class="buttons">
+      <button class="primary" id="analyzeBtn">
+        🧠 حلل الدرس
       </button>
 
-
-      <button
-        type="button"
-        class="btn danger"
-        id="clearBtn"
-      >
+      <button class="secondary" id="clearBtn">
         🗑️ مسح الصور
       </button>
-
     </div>
 
-  </label>
-
-
-  <div
-    id="previewGrid"
-    class="preview-grid"
-  ></div>
-
-
-  <div class="actions">
-
-    <button
-      class="btn primary"
-      id="analyzeBtn"
-      disabled
-    >
-      ✨ حلّل الدرس بالذكاء الاصطناعي
-    </button>
-
-  </div>
-
-
-  <div
-    class="loading"
-    id="loading"
-  >
-    ⏳ جاري فهم الصور وإنشاء الملخص والاختبار...
-  </div>
-
-</section>
-
-
-
-<!-- النتائج -->
-
-<section class="results">
-
-
-  <!-- الملخص -->
-
-  <article class="result-card">
-
-    <h3>
-      📄 الملخص المهم
-    </h3>
-
-    <div
-      id="summary"
-      class="result-content"
-    >
-      ارفع صور الدرس ثم اضغط تحليل.
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <span>جاري قراءة الصور وفهم الدرس...</span>
     </div>
 
-  </article>
+    <div id="status" class="status"></div>
+  </section>
 
 
+  <!-- النتائج -->
+  <div id="results" class="results">
 
-  <!-- الشرح -->
-
-  <article class="result-card">
-
-    <h3>
-      💡 الشرح المبسط
-    </h3>
-
-    <div
-      id="explanation"
-      class="result-content"
-    >
-      سيظهر شرح مبسط للدرس هنا.
-    </div>
-
-  </article>
+    <!-- الملخص -->
+    <section class="card">
+      <h2>📄 الملخص</h2>
+      <div id="summary" class="result-box"></div>
+    </section>
 
 
-
-  <!-- أهم المعلومات -->
-
-  <article class="result-card">
-
-    <h3>
-      ⭐ أهم المعلومات
-    </h3>
-
-    <div
-      id="important"
-      class="result-content"
-    >
-      ستظهر أهم النقاط والتعريفات هنا.
-    </div>
-
-  </article>
+    <!-- الشرح -->
+    <section class="card">
+      <h2>💡 الشرح المبسط</h2>
+      <div id="explanation" class="result-box"></div>
+    </section>
 
 
-
-  <!-- المصطلحات -->
-
-  <article class="result-card">
-
-    <h3>
-      🔑 الكلمات والمصطلحات
-    </h3>
-
-    <div
-      id="terms"
-      class="result-content"
-    >
-      ستظهر المصطلحات المهمة مع معانيها.
-    </div>
-
-  </article>
+    <!-- أهم النقاط -->
+    <section class="card">
+      <h2>⭐ أهم النقاط</h2>
+      <div id="importantPoints" class="list"></div>
+    </section>
 
 
-
-  <!-- الاختبار -->
-
-  <article class="result-card full">
-
-    <div class="section-title">
-
-      <h2>
-        🎯 الاختبار
-      </h2>
-
-      <span class="badge">
-        كتابي + اختياري + صح وخطأ
-      </span>
-
-    </div>
+    <!-- المصطلحات -->
+    <section class="card">
+      <h2>🔑 المصطلحات المهمة</h2>
+      <div id="keyTerms" class="terms"></div>
+    </section>
 
 
-    <div
-      id="quiz"
-      class="quiz"
-    >
+    <!-- التعاريف -->
+    <section class="card">
+      <h2>📖 التعاريف</h2>
+      <div id="definitions" class="list"></div>
+    </section>
 
-      <div class="result-content">
-        بعد تحليل الدرس سيُنشأ اختبار كامل من نفس محتوى الصور.
+
+    <!-- القوانين -->
+    <section class="card">
+      <h2>🧮 القوانين والمعادلات</h2>
+      <div id="laws" class="list"></div>
+    </section>
+
+
+    <!-- الاختبار -->
+    <section class="card">
+      <h2>📝 الاختبار</h2>
+
+      <div class="result-box" style="margin-bottom:15px;">
+        جاوب على جميع الأسئلة، وبعدها اضغط <b>تصحيح الاختبار</b>.
       </div>
 
-    </div>
+      <div id="quiz"></div>
 
+      <div class="buttons">
+        <button class="primary" id="gradeBtn">
+          📊 تصحيح الاختبار
+        </button>
 
-    <div
-      id="gradeBox"
-      class="grade-box"
-    ></div>
+        <button class="secondary" id="showAnswersBtn">
+          👁️ إظهار الإجابات
+        </button>
+      </div>
 
+      <div id="grade" class="grade">
+        <div id="gradeScore" class="grade-score"></div>
+        <div id="gradeMessage" class="grade-message"></div>
+      </div>
+    </section>
 
-    <div class="actions">
+  </div>
 
-      <button
-        class="btn primary"
-        id="gradeBtn"
-        disabled
-      >
-        📊 تصحيح الاختبار
-      </button>
-
-    </div>
-
-  </article>
-
-</section>
+  <footer>
+    Study AI — مساعدك الذكي للمذاكرة
+  </footer>
 
 </div>
 
 
-
 <script>
+  const uploadArea = document.getElementById("uploadArea");
+  const imageInput = document.getElementById("imageInput");
+  const previewGrid = document.getElementById("previewGrid");
 
-const fileInput =
-  document.getElementById("fileInput");
+  const analyzeBtn = document.getElementById("analyzeBtn");
+  const clearBtn = document.getElementById("clearBtn");
 
-const pickBtn =
-  document.getElementById("pickBtn");
+  const loading = document.getElementById("loading");
+  const statusEl = document.getElementById("status");
 
-const clearBtn =
-  document.getElementById("clearBtn");
+  const results = document.getElementById("results");
 
-const dropArea =
-  document.getElementById("dropArea");
+  const summaryEl = document.getElementById("summary");
+  const explanationEl = document.getElementById("explanation");
+  const importantPointsEl = document.getElementById("importantPoints");
+  const keyTermsEl = document.getElementById("keyTerms");
+  const definitionsEl = document.getElementById("definitions");
+  const lawsEl = document.getElementById("laws");
+  const quizEl = document.getElementById("quiz");
 
-const previewGrid =
-  document.getElementById("previewGrid");
+  const gradeBtn = document.getElementById("gradeBtn");
+  const showAnswersBtn = document.getElementById("showAnswersBtn");
 
-const analyzeBtn =
-  document.getElementById("analyzeBtn");
+  const gradeBox = document.getElementById("grade");
+  const gradeScore = document.getElementById("gradeScore");
+  const gradeMessage = document.getElementById("gradeMessage");
 
-const loading =
-  document.getElementById("loading");
+  let images = [];
+  let currentQuiz = [];
 
-const gradeBtn =
-  document.getElementById("gradeBtn");
+  uploadArea.addEventListener("click", () => {
+    imageInput.click();
+  });
 
-const quizEl =
-  document.getElementById("quiz");
+  imageInput.addEventListener("change", (e) => {
+    addImages(Array.from(e.target.files || []));
+    imageInput.value = "";
+  });
 
-const gradeBox =
-  document.getElementById("gradeBox");
+  uploadArea.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    uploadArea.classList.add("dragging");
+  });
 
+  uploadArea.addEventListener("dragleave", () => {
+    uploadArea.classList.remove("dragging");
+  });
 
-let files = [];
+  uploadArea.addEventListener("drop", (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove("dragging");
 
-let quizData = [];
+    const dropped = Array.from(e.dataTransfer.files || [])
+      .filter(file => file.type.startsWith("image/"));
 
+    addImages(dropped);
+  });
 
+  function addImages(newImages) {
+    images.push(...newImages);
 
-/* اختيار الصور */
-
-pickBtn.onclick = function(e){
-
-  e.preventDefault();
-
-  fileInput.click();
-
-};
-
-
-
-/* عند اختيار الصور */
-
-fileInput.onchange = function(){
-
-  addFiles(
-    [...fileInput.files]
-  );
-
-};
-
-
-
-/* السحب */
-
-["dragenter","dragover"].forEach(eventName => {
-
-  dropArea.addEventListener(
-    eventName,
-    event => {
-
-      event.preventDefault();
-
-      dropArea.classList.add("drag");
-
+    if (images.length > 20) {
+      images = images.slice(0, 20);
+      setStatus("الحد الأقصى 20 صورة.");
     }
-  );
 
-});
-
-
-["dragleave","drop"].forEach(eventName => {
-
-  dropArea.addEventListener(
-    eventName,
-    event => {
-
-      event.preventDefault();
-
-      dropArea.classList.remove("drag");
-
-    }
-  );
-
-});
-
-
-dropArea.addEventListener(
-  "drop",
-  event => {
-
-    addFiles(
-      [...event.dataTransfer.files]
-    );
-
+    renderPreviews();
   }
-);
 
+  function renderPreviews() {
+    previewGrid.innerHTML = "";
 
+    if (!images.length) {
+      return;
+    }
 
-/* إضافة الصور */
+    images.forEach((file, index) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "preview";
 
-function addFiles(newFiles){
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(file);
 
-  const validFiles =
-    newFiles.filter(
-      file =>
-        /^image\/(png|jpeg|webp)$/.test(file.type)
-    );
+      const remove = document.createElement("button");
+      remove.className = "remove-image";
+      remove.textContent = "×";
+      remove.title = "حذف الصورة";
 
-  files =
-    [
-      ...files,
-      ...validFiles
-    ].slice(0,20);
+      remove.addEventListener("click", () => {
+        images.splice(index, 1);
+        renderPreviews();
+      });
 
-  renderPreviews();
+      wrapper.appendChild(img);
+      wrapper.appendChild(remove);
 
-}
+      previewGrid.appendChild(wrapper);
+    });
+  }
 
+  clearBtn.addEventListener("click", () => {
+    images = [];
+    renderPreviews();
 
+    results.classList.remove("show");
+    gradeBox.classList.remove("show");
 
-/* عرض الصور */
+    setStatus("");
+  });
 
-function renderPreviews(){
+  analyzeBtn.addEventListener("click", async () => {
+    if (!images.length) {
+      setStatus("⚠️ ارفع صورة واحدة على الأقل.");
+      return;
+    }
 
-  previewGrid.innerHTML = "";
+    const formData = new FormData();
 
-  files.forEach(
-    (file,index) => {
+    images.forEach(file => {
+      formData.append("images", file);
+    });
 
-      const url =
-        URL.createObjectURL(file);
+    setLoading(true);
+    setStatus("جاري تحليل الدرس...");
 
-      const div =
-        document.createElement("div");
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        body: formData
+      });
 
-      div.className =
-        "preview";
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "حدث خطأ أثناء التحليل.");
+      }
+
+      renderResults(data);
+
+      setStatus("✅ تم تحليل الدرس بنجاح.");
+      results.classList.add("show");
+
+      window.scrollTo({
+        top: results.offsetTop - 20,
+        behavior: "smooth"
+      });
+
+    } catch (error) {
+      console.error(error);
+      setStatus("❌ " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  function renderResults(data) {
+    summaryEl.textContent = data.summary || "لا يوجد ملخص.";
+
+    explanationEl.textContent =
+      data.explanation || "لا يوجد شرح.";
+
+    renderImportantPoints(data.important_points);
+    renderKeyTerms(data.key_terms);
+    renderDefinitions(data.definitions);
+    renderLaws(data.laws);
+    renderQuiz(data.quiz);
+
+    gradeBox.classList.remove("show");
+    gradeScore.textContent = "";
+    gradeMessage.textContent = "";
+  }
+
+  function renderImportantPoints(points) {
+    importantPointsEl.innerHTML = "";
+
+    if (!Array.isArray(points) || !points.length) {
+      importantPointsEl.innerHTML =
+        '<div class="empty">لم يتم العثور على نقاط مهمة.</div>';
+      return;
+    }
+
+    points.forEach((point, index) => {
+      const div = document.createElement("div");
+      div.className = "list-item";
+
+      div.innerHTML =
+        `<span class="number">${index + 1}</span>${escapeHtml(point)}`;
+
+      importantPointsEl.appendChild(div);
+    });
+  }
+
+  function renderKeyTerms(terms) {
+    keyTermsEl.innerHTML = "";
+
+    if (!Array.isArray(terms) || !terms.length) {
+      keyTermsEl.innerHTML =
+        '<div class="empty">لا توجد مصطلحات واضحة.</div>';
+      return;
+    }
+
+    terms.forEach(term => {
+      const span = document.createElement("span");
+      span.className = "term";
+
+      if (typeof term === "string") {
+        span.textContent = term;
+      } else {
+        span.textContent = term.term || term.name || "";
+      }
+
+      keyTermsEl.appendChild(span);
+    });
+  }
+
+  function renderDefinitions(definitions) {
+    definitionsEl.innerHTML = "";
+
+    if (!Array.isArray(definitions) || !definitions.length) {
+      definitionsEl.innerHTML =
+        '<div class="empty">لم يتم العثور على تعاريف واضحة في الصور.</div>';
+      return;
+    }
+
+    definitions.forEach((item, index) => {
+      const div = document.createElement("div");
+      div.className = "list-item definition";
+
+      const term = item?.term || "تعريف";
+      const definition = item?.definition || "";
 
       div.innerHTML = `
-
-        <img
-          src="${url}"
-          alt="صورة الدرس ${index + 1}"
-        >
-
-        <span>
-          ${index + 1}
-        </span>
-
+        <div class="definition-title">
+          ${index + 1}. ${escapeHtml(term)}
+        </div>
+        <div>${escapeHtml(definition)}</div>
       `;
 
-      previewGrid.appendChild(div);
+      definitionsEl.appendChild(div);
+    });
+  }
 
-    }
-  );
+  function renderLaws(laws) {
+    lawsEl.innerHTML = "";
 
-
-  analyzeBtn.disabled =
-    !files.length;
-
-}
-
-
-
-/* مسح الصور */
-
-clearBtn.onclick = function(){
-
-  files = [];
-
-  fileInput.value = "";
-
-  previewGrid.innerHTML = "";
-
-  analyzeBtn.disabled = true;
-
-  quizData = [];
-
-  quizEl.innerHTML = `
-
-    <div class="result-content">
-
-      بعد تحليل الدرس سيُنشأ اختبار كامل من نفس محتوى الصور.
-
-    </div>
-
-  `;
-
-  gradeBtn.disabled = true;
-
-  gradeBox.style.display = "none";
-
-};
-
-
-
-/* تحليل الدرس */
-
-analyzeBtn.onclick =
-  async function(){
-
-    if(!files.length)
+    if (!Array.isArray(laws) || !laws.length) {
+      lawsEl.innerHTML =
+        '<div class="empty">لا توجد قوانين أو معادلات واضحة في الدرس.</div>';
       return;
+    }
 
+    laws.forEach((law, index) => {
+      const div = document.createElement("div");
+      div.className = "list-item law";
 
-    loading.style.display =
-      "block";
+      const title = law?.title || `القانون ${index + 1}`;
+      const formula = law?.formula || "";
+      const explanation = law?.explanation || "";
 
-    analyzeBtn.disabled =
-      true;
+      div.innerHTML = `
+        <div class="law-title">
+          ${index + 1}. ${escapeHtml(title)}
+        </div>
 
-    gradeBtn.disabled =
-      true;
+        ${
+          formula
+            ? `<div class="formula">${escapeHtml(formula)}</div>`
+            : ""
+        }
 
-    gradeBox.style.display =
-      "none";
+        ${
+          explanation
+            ? `<div>${escapeHtml(explanation)}</div>`
+            : ""
+        }
+      `;
 
+      lawsEl.appendChild(div);
+    });
+  }
 
-    const formData =
-      new FormData();
+  function renderQuiz(quiz) {
+    quizEl.innerHTML = "";
+    currentQuiz = Array.isArray(quiz) ? quiz : [];
 
+    if (!currentQuiz.length) {
+      quizEl.innerHTML =
+        '<div class="empty">لم يتم إنشاء أسئلة.</div>';
+      return;
+    }
 
-    files.forEach(
-      file =>
-        formData.append(
-          "images",
-          file
-        )
-    );
+    currentQuiz.forEach((question, index) => {
+      const box = document.createElement("div");
+      box.className = "quiz-question";
+      box.dataset.index = index;
 
+      let typeText = "سؤال";
 
-    try{
-
-      const response =
-        await fetch(
-          "/api/analyze",
-          {
-            method:"POST",
-            body:formData
-          }
-        );
-
-
-      const data =
-        await response.json();
-
-
-      if(!response.ok){
-
-        throw new Error(
-          data.error ||
-          "حدث خطأ أثناء التحليل"
-        );
-
+      if (question.type === "choice") {
+        typeText = "اختيار من متعدد";
+      } else if (question.type === "truefalse") {
+        typeText = "صح أو خطأ";
+      } else if (question.type === "written") {
+        typeText = "سؤال كتابي";
       }
 
+      const header = document.createElement("div");
+      header.className = "question-header";
 
-      document.getElementById(
-        "summary"
-      ).textContent =
-        data.summary || "—";
+      header.innerHTML = `
+        <span class="question-number">
+          السؤال ${index + 1}
+        </span>
 
+        <span class="question-type">
+          ${typeText}
+        </span>
+      `;
 
-      document.getElementById(
-        "explanation"
-      ).textContent =
-        data.explanation || "—";
+      const text = document.createElement("div");
+      text.className = "question-text";
+      text.textContent = question.question || "";
 
+      box.appendChild(header);
+      box.appendChild(text);
 
-      renderList(
-        "important",
-        data.important_points || []
-      );
+      if (
+        question.type === "choice" ||
+        question.type === "truefalse"
+      ) {
+        const options = document.createElement("div");
+        options.className = "options";
 
+        const list = Array.isArray(question.options)
+          ? question.options
+          : [];
 
-      renderTerms(
-        data.key_terms || []
-      );
+        list.forEach(option => {
+          const btn = document.createElement("button");
 
+          btn.type = "button";
+          btn.className = "option-btn";
+          btn.textContent = option;
 
-      quizData =
-        data.quiz || [];
+          btn.addEventListener("click", () => {
+            options.querySelectorAll(".option-btn")
+              .forEach(b => b.classList.remove("selected"));
 
+            btn.classList.add("selected");
 
-      renderQuiz();
+            question.userAnswer = option;
+          });
 
+          options.appendChild(btn);
+        });
 
-    }catch(error){
+        box.appendChild(options);
 
-      alert(
-        "حدث خطأ: " +
-        error.message
-      );
+      } else {
+        const textarea = document.createElement("textarea");
 
-    }finally{
+        textarea.className = "written-answer";
+        textarea.placeholder = "اكتب إجابتك هنا...";
 
-      loading.style.display =
-        "none";
+        textarea.addEventListener("input", () => {
+          question.userAnswer = textarea.value;
+        });
 
-      analyzeBtn.disabled =
-        false;
+        box.appendChild(textarea);
+      }
 
+      const note = document.createElement("div");
+      note.className = "answer-note";
+      note.dataset.answer = "1";
+
+      box.appendChild(note);
+
+      quizEl.appendChild(box);
+    });
+  }
+
+  gradeBtn.addEventListener("click", () => {
+    if (!currentQuiz.length) {
+      return;
     }
 
-  };
+    let score = 0;
 
+    currentQuiz.forEach((question, index) => {
+      const box = quizEl.querySelector(
+        `.quiz-question[data-index="${index}"]`
+      );
 
+      if (!box) return;
 
-/* عرض القوائم */
+      box.classList.remove("correct", "wrong");
 
-function renderList(id,array){
+      const userAnswer =
+        typeof question.userAnswer === "string"
+          ? question.userAnswer.trim()
+          : "";
 
-  const element =
-    document.getElementById(id);
+      const correct = checkAnswer(question, userAnswer);
 
+      if (correct) {
+        score++;
+        box.classList.add("correct");
+      } else {
+        box.classList.add("wrong");
+      }
 
-  if(!array.length){
-
-    element.textContent =
-      "—";
-
-    return;
-
-  }
-
-
-  element.innerHTML =
-    "<ul>" +
-
-    array
-      .map(
-        item =>
-          `<li>${escapeHtml(item)}</li>`
-      )
-      .join("") +
-
-    "</ul>";
-
-}
-
-
-
-/* عرض المصطلحات */
-
-function renderTerms(array){
-
-  const element =
-    document.getElementById("terms");
-
-
-  if(!array.length){
-
-    element.textContent =
-      "—";
-
-    return;
-
-  }
-
-
-  element.innerHTML =
-    "<ul>" +
-
-    array
-      .map(item => {
-
-        if(typeof item === "string"){
-
-          return `
-            <li>
-              ${escapeHtml(item)}
-            </li>
-          `;
-
-        }
-
-
-        return `
-          <li>
-
-            <b>
-              ${escapeHtml(item.term || "")}
-            </b>
-
-            —
-
-            ${escapeHtml(item.meaning || "")}
-
-          </li>
-        `;
-
-      })
-      .join("") +
-
-    "</ul>";
-
-}
-
-
-
-/* إنشاء الاختبار */
-
-function renderQuiz(){
-
-  if(!quizData.length){
-
-    quizEl.innerHTML = `
-
-      <div class="result-content">
-        لم يتم إنشاء أسئلة.
-      </div>
-
-    `;
-
-    return;
-
-  }
-
-
-  quizEl.innerHTML =
-    quizData
-      .map(
-        (question,index) => {
-
-          const type =
-            question.type === "choice"
-              ? "اختيار من متعدد"
-              : question.type === "truefalse"
-              ? "صح أو خطأ"
-              : "سؤال كتابي";
-
-
-          let body = "";
-
-
-          /* اختيار من متعدد */
-
-          if(question.type === "choice"){
-
-            body = `
-
-              <div class="options">
-
-                ${
-                  (question.options || [])
-                    .map(
-                      (option,optionIndex) => `
-
-                        <button
-                          type="button"
-                          class="option"
-                          data-q="${index}"
-                          data-answer="${escapeAttr(option)}"
-                        >
-
-                          ${String.fromCharCode(1571 + optionIndex)}.
-
-                          ${escapeHtml(option)}
-
-                        </button>
-
-                      `
-                    )
-                    .join("")
-                }
-
-              </div>
-
-            `;
-
-          }
-
-
-          /* صح وخطأ */
-
-          else if(question.type === "truefalse"){
-
-            body = `
-
-              <div class="truefalse">
-
-                <button
-                  type="button"
-                  class="option"
-                  data-q="${index}"
-                  data-answer="صح"
-                >
-                  ✅ صح
-                </button>
-
-
-                <button
-                  type="button"
-                  class="option"
-                  data-q="${index}"
-                  data-answer="خطأ"
-                >
-                  ❌ خطأ
-                </button>
-
-              </div>
-
-            `;
-
-          }
-
-
-          /* السؤال الكتابي */
-
-          else{
-
-            body = `
-
-              <textarea
-                class="written"
-                id="written-${index}"
-                placeholder="اكتب إجابتك هنا..."
-              ></textarea>
-
-            `;
-
-          }
-
-
-          return `
-
-            <div
-              class="question"
-              id="question-${index}"
-            >
-
-              <div class="q-head">
-
-                <span class="q-number">
-                  السؤال ${index + 1}
-                </span>
-
-                <span class="q-type">
-                  ${type}
-                </span>
-
-              </div>
-
-
-              <div class="question-text">
-
-                ${escapeHtml(
-                  question.question || ""
-                )}
-
-              </div>
-
-
-              ${body}
-
-
-              <div
-                class="small feedback"
-                id="feedback-${index}"
-              ></div>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
-
-  /* اختيار الإجابة */
-
-  quizEl
-    .querySelectorAll(".option")
-    .forEach(button => {
-
-      button.onclick =
-        function(){
-
-          const questionIndex =
-            Number(
-              button.dataset.q
-            );
-
-
-          quizEl
-            .querySelectorAll(
-              `.option[data-q="${questionIndex}"]`
-            )
-            .forEach(
-              option =>
-                option.classList.remove(
-                  "selected"
-                )
-            );
-
-
-          button.classList.add(
-            "selected"
-          );
-
-        };
-
+      showCorrectAnswer(box, question);
     });
 
+    const total = currentQuiz.length;
+    const percent = Math.round((score / total) * 100);
 
-  gradeBtn.disabled =
-    false;
+    gradeScore.textContent =
+      `${score} / ${total}`;
 
-}
+    gradeMessage.textContent =
+      `نسبتك: ${percent}%`;
 
-
-
-/* تصحيح الاختبار */
-
-gradeBtn.onclick =
-  function(){
-
-    let correct = 0;
-
-
-    quizData.forEach(
-      (question,index) => {
-
-        const questionBox =
-          document.getElementById(
-            `question-${index}`
-          );
-
-
-        const feedback =
-          document.getElementById(
-            `feedback-${index}`
-          );
-
-
-        questionBox.classList.remove(
-          "correct",
-          "wrong"
-        );
-
-
-        let userAnswer = "";
-
-
-        /* سؤال كتابي */
-
-        if(question.type === "written"){
-
-          userAnswer =
-            document.getElementById(
-              `written-${index}`
-            ).value.trim();
-
-        }
-
-
-        /* سؤال اختياري أو صح وخطأ */
-
-        else{
-
-          const selected =
-            quizEl.querySelector(
-              `.option[data-q="${index}"].selected`
-            );
-
-
-          userAnswer =
-            selected
-              ?.dataset.answer ||
-            "";
-
-        }
-
-
-        const acceptedAnswers =
-          [
-            question.answer,
-            ...(question.accepted_answers || [])
-          ]
-          .filter(Boolean);
-
-
-        let isCorrect =
-          acceptedAnswers.some(
-            answer =>
-              normalize(userAnswer) ===
-              normalize(answer)
-          );
-
-
-        /* مرونة بسيطة للأسئلة الكتابية */
-
-        if(
-          question.type === "written" &&
-          !isCorrect &&
-          userAnswer
-        ){
-
-          isCorrect =
-            acceptedAnswers.some(
-              answer => {
-
-                const user =
-                  normalize(userAnswer);
-
-                const correctAnswer =
-                  normalize(answer);
-
-
-                return (
-                  user.includes(correctAnswer) ||
-                  correctAnswer.includes(user)
-                );
-
-              }
-            );
-
-        }
-
-
-        if(isCorrect){
-
-          correct++;
-
-          questionBox.classList.add(
-            "correct"
-          );
-
-          feedback.textContent =
-            "✅ إجابة صحيحة";
-
-          feedback.style.color =
-            "#4ade80";
-
-        }else{
-
-          questionBox.classList.add(
-            "wrong"
-          );
-
-          feedback.innerHTML =
-
-            `❌ غير صحيحة — ` +
-
-            `الإجابة النموذجية: ` +
-
-            `<b>${escapeHtml(
-              question.answer || "—"
-            )}</b>`;
-
-          feedback.style.color =
-            "#f87171";
-
-        }
-
-      }
-    );
-
-
-    const total =
-      quizData.length;
-
-
-    const percentage =
-      total
-        ? Math.round(
-            correct / total * 100
-          )
-        : 0;
-
-
-    gradeBox.style.display =
-      "block";
-
-
-    gradeBox.innerHTML = `
-
-      <div class="grade-big">
-
-        درجتك:
-        ${correct}
-        /
-        ${total}
-
-      </div>
-
-
-      <div class="result-content">
-
-        النسبة:
-        ${percentage}%
-
-        — تم تصحيح جميع الأسئلة.
-
-      </div>
-
-    `;
-
+    gradeBox.classList.add("show");
 
     gradeBox.scrollIntoView({
-      behavior:"smooth",
-      block:"center"
+      behavior: "smooth",
+      block: "center"
+    });
+  });
+
+  showAnswersBtn.addEventListener("click", () => {
+    currentQuiz.forEach((question, index) => {
+      const box = quizEl.querySelector(
+        `.quiz-question[data-index="${index}"]`
+      );
+
+      if (!box) return;
+
+      showCorrectAnswer(box, question);
+    });
+  });
+
+  function showCorrectAnswer(box, question) {
+    const note = box.querySelector(".answer-note");
+
+    if (!note) return;
+
+    let answer = question.answer || "";
+
+    if (Array.isArray(question.accepted_answers)) {
+      if (question.accepted_answers.length) {
+        answer +=
+          " | إجابات مقبولة: " +
+          question.accepted_answers.join("، ");
+      }
+    }
+
+    note.textContent =
+      "الإجابة النموذجية: " + answer;
+
+    note.classList.add("show");
+  }
+
+  function checkAnswer(question, userAnswer) {
+    if (!userAnswer) {
+      return false;
+    }
+
+    const correctAnswer =
+      typeof question.answer === "string"
+        ? question.answer
+        : "";
+
+    const accepted =
+      Array.isArray(question.accepted_answers)
+        ? question.accepted_answers
+        : [];
+
+    const possibleAnswers = [
+      correctAnswer,
+      ...accepted
+    ].filter(Boolean);
+
+    const normalizedUser =
+      normalizeArabic(userAnswer);
+
+    return possibleAnswers.some(answer => {
+      const normalizedAnswer =
+        normalizeArabic(answer);
+
+      if (!normalizedAnswer) {
+        return false;
+      }
+
+      if (normalizedUser === normalizedAnswer) {
+        return true;
+      }
+
+      if (question.type === "written") {
+        return flexibleWrittenMatch(
+          normalizedUser,
+          normalizedAnswer
+        );
+      }
+
+      return false;
+    });
+  }
+
+  function normalizeArabic(text) {
+    return String(text)
+      .toLowerCase()
+      .replace(/[أإآ]/g, "ا")
+      .replace(/ى/g, "ي")
+      .replace(/ة/g, "ه")
+      .replace(/[ًٌٍَُِّْـ]/g, "")
+      .replace(/[.,،؛:!?؟()[\]{}"'`]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function flexibleWrittenMatch(user, correct) {
+    if (user.includes(correct) || correct.includes(user)) {
+      return true;
+    }
+
+    const userWords = new Set(
+      user.split(" ").filter(word => word.length > 2)
+    );
+
+    const correctWords = correct
+      .split(" ")
+      .filter(word => word.length > 2);
+
+    if (!correctWords.length) {
+      return false;
+    }
+
+    let matches = 0;
+
+    correctWords.forEach(word => {
+      if (userWords.has(word)) {
+        matches++;
+      }
     });
 
-  };
+    return matches / correctWords.length >= 0.6;
+  }
 
+  function setLoading(show) {
+    loading.classList.toggle("show", show);
+    analyzeBtn.disabled = show;
 
+    if (show) {
+      analyzeBtn.textContent = "⏳ جاري التحليل...";
+    } else {
+      analyzeBtn.textContent = "🧠 حلل الدرس";
+    }
+  }
 
-/* توحيد النص العربي */
+  function setStatus(message) {
+    statusEl.textContent = message;
+  }
 
-function normalize(text){
-
-  return String(text || "")
-
-    .toLowerCase()
-
-    .replace(/[أإآ]/g,"ا")
-
-    .replace(/ى/g,"ي")
-
-    .replace(/ة/g,"ه")
-
-    .replace(
-      /[ًٌٍَُِّْـ]/g,
-      ""
-    )
-
-    .replace(
-      /[.,،؛:!?؟()"'\-\n\r]/g,
-      " "
-    )
-
-    .replace(
-      /\s+/g,
-      " "
-    )
-
-    .trim();
-
-}
-
-
-
-/* حماية HTML */
-
-function escapeHtml(text){
-
-  return String(text ?? "")
-    .replace(
-      /[&<>"']/g,
-      char => ({
-
-        "&":"&amp;",
-        "<":"&lt;",
-        ">":"&gt;",
-        '"':"&quot;",
-        "'":"&#39;"
-
-      }[char])
-    );
-
-}
-
-
-
-/* حماية الخصائص */
-
-function escapeAttr(text){
-
-  return escapeHtml(text)
-    .replace(
-      /`/g,
-      "&#96;"
-    );
-
-}
-
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 </script>
 
 </body>
