@@ -12,8 +12,13 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
+
+// ======================================================
+// OpenAI
+// ======================================================
+
 if (!process.env.OPENAI_API_KEY) {
-  console.error("❌ OPENAI_API_KEY غير موجود في Environment Variables.");
+  console.error("ERROR: OPENAI_API_KEY is missing.");
 }
 
 const openai = new OpenAI({
@@ -21,9 +26,9 @@ const openai = new OpenAI({
 });
 
 
-// =====================================================
-// Multer
-// =====================================================
+// ======================================================
+// Multer - رفع الصور
+// ======================================================
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -34,10 +39,8 @@ const upload = multer({
   },
 
   fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(
-        new Error("يمكن رفع الصور فقط.")
-      );
+    if (!file.mimetype || !file.mimetype.startsWith("image/")) {
+      return cb(new Error("يمكن رفع الصور فقط."));
     }
 
     cb(null, true);
@@ -45,102 +48,138 @@ const upload = multer({
 });
 
 
-// =====================================================
-// Static files
-// =====================================================
+// ======================================================
+// ملفات الموقع
+// ======================================================
 
 app.use(express.static(__dirname));
 
 app.get("/", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "index.html")
-  );
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 
-// =====================================================
+// ======================================================
 // تعليمات الذكاء الاصطناعي
-// =====================================================
+// ======================================================
 
 const instructions = `
-أنت مساعد دراسة ذكي متخصص في فهم الدروس من الصور.
+أنت Study AI، مساعد دراسة ذكي متخصص في فهم الدروس المدرسية من الصور.
 
-المستخدم سيرسل صورة أو عدة صور لدرس مدرسي.
+سيتم إرسال صورة واحدة أو عدة صور لصفحات درس.
 
-مهمتك ليست مجرد استخراج النص OCR.
-
-يجب أن تفهم محتوى الصور وسياق الدرس والعناوين والجداول والأمثلة والقوانين والتعاريف.
+مهمتك هي فهم محتوى الصور بالكامل، وليس مجرد نسخ النص الموجود فيها.
 
 اقرأ جميع الصور معًا وكأنها صفحات متتابعة من نفس الدرس.
 
-قواعد مهمة جدًا:
+يجب أن تعتمد على المعلومات الموجودة في الصور فقط.
 
-1. اعتمد فقط على المعلومات الموجودة فعليًا في الصور.
-2. لا تخترع معلومات غير موجودة في الدرس.
-3. إذا كانت معلومة غير واضحة، لا تخمنها.
-4. اجعل الملخص مركزًا على المعلومات المهمة للاختبار.
-5. اشرح الدرس بلغة عربية بسيطة وسهلة للطالب.
-6. استخرج أهم النقاط التي يجب حفظها وفهمها.
-7. استخرج المصطلحات المهمة.
-8. استخرج التعاريف الموجودة فعليًا في الدرس.
-9. استخرج القوانين والمعادلات الموجودة فعليًا في الدرس.
-10. إذا لم توجد قوانين أو معادلات، اجعل laws مصفوفة فارغة.
-11. إذا لم توجد تعاريف واضحة، اجعل definitions مصفوفة فارغة.
+لا تخترع أي معلومة غير موجودة في الدرس.
+
+إذا كانت معلومة غير واضحة فلا تخمنها.
+
+استخرج من الدرس:
+
+1. ملخص واضح ومختصر.
+2. شرح مبسط يساعد الطالب على فهم الدرس.
+3. أهم النقاط التي يجب التركيز عليها.
+4. المصطلحات المهمة.
+5. التعاريف الموجودة فعليًا في الدرس.
+6. القوانين والمعادلات الموجودة فعليًا في الدرس.
+7. اختبار مختلط مبني على محتوى الدرس.
+
+بالنسبة للتعاريف:
+
+استخرج التعاريف الواضحة الموجودة في الدرس فقط.
+
+كل تعريف يجب أن يكون بهذا الشكل:
+
+term = المصطلح
+definition = تعريفه
+
+إذا لم توجد تعاريف واضحة، استخدم مصفوفة فارغة.
+
+بالنسبة للقوانين:
+
+استخرج القوانين والمعادلات الموجودة في الدرس فقط.
+
+كل قانون يجب أن يحتوي على:
+
+title = اسم القانون أو موضوعه
+formula = القانون أو المعادلة
+explanation = شرح بسيط له
+
+إذا لم توجد قوانين أو معادلات، استخدم مصفوفة فارغة.
 
 بالنسبة للاختبار:
 
-أنشئ اختبارًا مختلطًا من أسئلة مناسبة للدرس.
+أنشئ اختبارًا من 10 إلى 15 سؤالًا عندما يسمح محتوى الدرس بذلك.
 
-استخدم الأنواع التالية:
+اجعل الاختبار متنوعًا.
 
-- choice = اختيار من متعدد
-- truefalse = صح أو خطأ
-- written = سؤال كتابي
+استخدم:
 
-لا تجعل كل الأسئلة من نوع واحد.
+choice
+truefalse
+written
 
-اجعل الأسئلة تشبه أسئلة الاختبارات المدرسية الحقيقية.
+أسئلة الاختيار من متعدد يجب أن تحتوي على 4 خيارات.
 
-تجنب الأسئلة السطحية مثل:
-"ما المصطلح؟"
-إلا إذا كان هذا فعلًا مناسبًا لمحتوى الدرس.
+إجابة واحدة فقط تكون صحيحة.
 
-يفضل استخدام أسئلة مثل:
-- علل...
-- اذكر...
-- قارن...
-- ماذا يحدث إذا...
-- أي العبارات التالية صحيحة...
-- احسب...
-- استنتج...
-- وضح...
-- ما السبب...
-- ما النتيجة...
+answer يجب أن تكون مطابقة تمامًا لأحد الخيارات.
 
-إذا كان الدرس يحتوي على قوانين، أنشئ بعض الأسئلة التي تختبر فهم القانون أو استخدامه، وليس حفظ اسمه فقط.
+أسئلة الصح والخطأ يجب أن تحتوي على:
 
-أسئلة الاختيار من متعدد:
-- 4 خيارات بالضبط.
-- إجابة واحدة صحيحة.
-- answer يجب أن تكون مطابقة تمامًا لأحد الخيارات.
+صح
+خطأ
 
-أسئلة صح وخطأ:
-- options يجب أن تكون ["صح","خطأ"].
-- answer يجب أن تكون "صح" أو "خطأ".
+وanswer يجب أن تكون إما:
 
-الأسئلة الكتابية:
-- answer تكون إجابة نموذجية قصيرة وواضحة.
-- accepted_answers تحتوي على إجابات بديلة صحيحة إن وجدت.
+صح
 
-أنشئ تقريبًا 10 إلى 15 سؤالًا إذا كان محتوى الصور يسمح بذلك.
+أو:
 
-أخرج النتيجة بصيغة JSON فقط.
+خطأ
 
-لا تضع Markdown.
-لا تضع ```json.
-لا تكتب أي كلام قبل JSON أو بعده.
+الأسئلة الكتابية يجب أن تحتوي على إجابة نموذجية قصيرة.
 
-الصيغة المطلوبة:
+يمكن وضع إجابات بديلة صحيحة في accepted_answers.
+
+اجعل الأسئلة مثل أسئلة الاختبارات المدرسية الحقيقية.
+
+استخدم أسئلة مثل:
+
+علل.
+وضح.
+اذكر.
+قارن.
+استنتج.
+ما السبب؟
+ما النتيجة؟
+ماذا يحدث إذا؟
+أي العبارات التالية صحيحة؟
+احسب.
+استخدم القانون.
+فسر.
+
+لا تجعل الاختبار كله أسئلة حفظ بسيطة.
+
+إذا كان الدرس يحتوي على قوانين، اجعل بعض الأسئلة تختبر استخدام القانون وفهمه.
+
+لا تستخدم أسئلة غير مرتبطة بمحتوى الصور.
+
+لا تضف معلومات من خارج الدرس.
+
+أعد النتيجة بصيغة JSON فقط.
+
+لا تكتب أي كلام قبل JSON.
+
+لا تكتب أي كلام بعد JSON.
+
+لا تستخدم Markdown داخل النتيجة.
+
+استخدم الشكل التالي:
 
 {
   "summary": "ملخص الدرس",
@@ -156,20 +195,20 @@ const instructions = `
   "definitions": [
     {
       "term": "المصطلح",
-      "definition": "تعريف المصطلح"
+      "definition": "التعريف"
     }
   ],
   "laws": [
     {
       "title": "اسم القانون",
-      "formula": "القانون أو المعادلة",
-      "explanation": "شرح مختصر للقانون"
+      "formula": "القانون",
+      "explanation": "شرح القانون"
     }
   ],
   "quiz": [
     {
       "type": "choice",
-      "question": "نص السؤال",
+      "question": "السؤال",
       "options": [
         "الخيار الأول",
         "الخيار الثاني",
@@ -181,7 +220,7 @@ const instructions = `
     },
     {
       "type": "truefalse",
-      "question": "نص العبارة",
+      "question": "العبارة",
       "options": [
         "صح",
         "خطأ"
@@ -191,7 +230,7 @@ const instructions = `
     },
     {
       "type": "written",
-      "question": "نص السؤال الكتابي",
+      "question": "السؤال الكتابي",
       "options": [],
       "answer": "الإجابة النموذجية",
       "accepted_answers": [
@@ -203,9 +242,9 @@ const instructions = `
 `;
 
 
-// =====================================================
-// API
-// =====================================================
+// ======================================================
+// API تحليل الصور
+// ======================================================
 
 app.post(
   "/api/analyze",
@@ -214,10 +253,14 @@ app.post(
 
     try {
 
+      // -----------------------------------------------
+      // التأكد من وجود المفتاح
+      // -----------------------------------------------
+
       if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({
           error:
-            "مفتاح OpenAI غير موجود. أضف OPENAI_API_KEY في Environment Variables."
+            "OPENAI_API_KEY غير موجود في Environment Variables في Render."
         });
       }
 
@@ -226,7 +269,7 @@ app.post(
       // التأكد من وجود الصور
       // -----------------------------------------------
 
-      if (!req.files || !req.files.length) {
+      if (!req.files || req.files.length === 0) {
         return res.status(400).json({
           error: "لم يتم رفع أي صورة."
         });
@@ -234,10 +277,10 @@ app.post(
 
 
       // -----------------------------------------------
-      // تحويل الصور إلى input_image
+      // تحويل الصور إلى Data URLs
       // -----------------------------------------------
 
-      const imageContents = req.files.map(file => {
+      const imageContents = req.files.map((file) => {
 
         const base64 =
           file.buffer.toString("base64");
@@ -254,54 +297,40 @@ app.post(
 
 
       // -----------------------------------------------
-      // طلب التحليل
+      // إرسال الصور للذكاء الاصطناعي
       // -----------------------------------------------
 
-      const response =
-        await openai.responses.create({
+      const response = await openai.responses.create({
 
-          model:
-            process.env.OPENAI_MODEL ||
-            "gpt-5.6-luna",
+        model:
+          process.env.OPENAI_MODEL ||
+          "gpt-5.6-luna",
 
-          instructions,
+        instructions: instructions,
 
-          input: [
-            {
-              role: "user",
+        input: [
+          {
+            role: "user",
 
-              content: [
-                {
-                  type: "input_text",
+            content: [
 
-                  text:
-                    `
-حلل جميع صور الدرس المرفقة.
+              {
+                type: "input_text",
 
-أريد منك فهم محتوى الدرس كاملًا وليس مجرد نسخ النص.
+                text:
+                  "حلل جميع صور الدرس المرفقة معًا. افهم محتوى الدرس ثم أنشئ الملخص والشرح وأهم النقاط والمصطلحات والتعاريف والقوانين والاختبار حسب التعليمات."
+              },
 
-استخرج:
-- الملخص
-- الشرح المبسط
-- أهم النقاط
-- المصطلحات
-- التعاريف
-- القوانين والمعادلات
-- اختبار مختلط
+              ...imageContents
 
-انتبه إلى ترتيب الصور، فقد تكون الصفحات متتابعة.
-                    `.trim()
-                },
-
-                ...imageContents
-              ]
-            }
-          ]
-        });
+            ]
+          }
+        ]
+      });
 
 
       // -----------------------------------------------
-      // استخراج النص
+      // الحصول على نتيجة الذكاء الاصطناعي
       // -----------------------------------------------
 
       let output =
@@ -310,12 +339,24 @@ app.post(
       output = output.trim();
 
 
+      if (!output) {
+        return res.status(500).json({
+          error:
+            "لم يرجع الذكاء الاصطناعي أي نتيجة."
+        });
+      }
+
+
       // -----------------------------------------------
-      // تنظيف JSON
+      // تنظيف نتيجة JSON
       // -----------------------------------------------
 
       output = cleanJsonText(output);
 
+
+      // -----------------------------------------------
+      // تحويل JSON
+      // -----------------------------------------------
 
       let data;
 
@@ -323,42 +364,52 @@ app.post(
 
         data = JSON.parse(output);
 
-      } catch (parseError) {
+      } catch (error) {
 
         console.error(
-          "❌ فشل تحويل رد الذكاء الاصطناعي إلى JSON:"
+          "JSON PARSE ERROR:"
         );
 
         console.error(output);
 
         return res.status(500).json({
           error:
-            "الذكاء الاصطناعي أعاد نتيجة غير صالحة. حاول مرة أخرى."
+            "الذكاء الاصطناعي أرجع نتيجة غير صالحة. حاول مرة أخرى."
         });
       }
 
 
       // -----------------------------------------------
-      // تنظيف النتيجة
+      // ترتيب وتنظيف البيانات
       // -----------------------------------------------
 
-      const safeData =
+      const result =
         normalizeStudyData(data);
 
 
-      return res.json(safeData);
+      // -----------------------------------------------
+      // إرسال النتيجة للموقع
+      // -----------------------------------------------
+
+      return res.json(result);
 
     } catch (error) {
 
-      console.error("❌ API ERROR:");
+      console.error(
+        "ANALYZE ERROR:"
+      );
+
       console.error(error);
+
 
       let message =
         "حدث خطأ أثناء تحليل الصور.";
 
-      if (error?.message) {
+
+      if (error && error.message) {
         message = error.message;
       }
+
 
       return res.status(500).json({
         error: message
@@ -368,53 +419,54 @@ app.post(
 );
 
 
-// =====================================================
+// ======================================================
 // تنظيف JSON
-// =====================================================
+// ======================================================
 
 function cleanJsonText(text) {
 
-  let result = String(text || "").trim();
+  let result =
+    String(text || "").trim();
 
 
-  // إزالة ```json
-  result = result.replace(
-    /^```json\s*/i,
-    ""
-  );
-
-  // إزالة ```
-  result = result.replace(
-    /^```\s*/i,
-    ""
-  );
-
-  result = result.replace(
-    /\s*```$/i,
-    ""
-  );
-
-  result = result.trim();
+  // إزالة مسافات زائدة
+  result =
+    result.trim();
 
 
-  // إذا كان هناك كلام حول JSON
-  // نحاول استخراج أول object
-  if (!result.startsWith("{")) {
+  // إذا رجع النموذج JSON داخل علامات code block
+  if (result.startsWith("```")) {
 
-    const first =
-      result.indexOf("{");
+    result =
+      result.replace(/^```[a-zA-Z]*\s*/, "");
 
-    const last =
-      result.lastIndexOf("}");
+    result =
+      result.replace(/\s*```$/, "");
 
-    if (
-      first !== -1 &&
-      last !== -1 &&
-      last > first
-    ) {
-      result =
-        result.slice(first, last + 1);
-    }
+    result =
+      result.trim();
+  }
+
+
+  // إذا كان هناك كلام قبل JSON أو بعده
+  const firstBrace =
+    result.indexOf("{");
+
+  const lastBrace =
+    result.lastIndexOf("}");
+
+
+  if (
+    firstBrace !== -1 &&
+    lastBrace !== -1 &&
+    lastBrace > firstBrace
+  ) {
+
+    result =
+      result.substring(
+        firstBrace,
+        lastBrace + 1
+      );
   }
 
 
@@ -422,84 +474,118 @@ function cleanJsonText(text) {
 }
 
 
-// =====================================================
-// Normalize study data
-// =====================================================
+// ======================================================
+// تنظيف البيانات الرئيسية
+// ======================================================
 
 function normalizeStudyData(data) {
 
-  const result = {
+  return {
 
     summary:
       typeof data?.summary === "string"
         ? data.summary.trim()
         : "",
 
+
     explanation:
       typeof data?.explanation === "string"
         ? data.explanation.trim()
         : "",
 
+
     important_points:
-      Array.isArray(data?.important_points)
-        ? data.important_points
-            .filter(item => typeof item === "string")
-            .map(item => item.trim())
-            .filter(Boolean)
-        : [],
+      normalizeStringArray(
+        data?.important_points
+      ),
+
 
     key_terms:
-      Array.isArray(data?.key_terms)
-        ? normalizeKeyTerms(data.key_terms)
-        : [],
+      normalizeKeyTerms(
+        data?.key_terms
+      ),
+
 
     definitions:
-      Array.isArray(data?.definitions)
-        ? normalizeDefinitions(data.definitions)
-        : [],
+      normalizeDefinitions(
+        data?.definitions
+      ),
+
 
     laws:
-      Array.isArray(data?.laws)
-        ? normalizeLaws(data.laws)
-        : [],
+      normalizeLaws(
+        data?.laws
+      ),
+
 
     quiz:
-      Array.isArray(data?.quiz)
-        ? normalizeQuiz(data.quiz)
-        : []
+      normalizeQuiz(
+        data?.quiz
+      )
+
   };
-
-
-  return result;
 }
 
 
-// =====================================================
-// Key terms
-// =====================================================
+// ======================================================
+// تنظيف Arrays النصوص
+// ======================================================
 
-function normalizeKeyTerms(terms) {
+function normalizeStringArray(value) {
 
-  return terms
-    .map(term => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
 
-      if (typeof term === "string") {
-        return term.trim();
+
+  return value
+    .filter(item =>
+      typeof item === "string"
+    )
+    .map(item =>
+      item.trim()
+    )
+    .filter(Boolean);
+}
+
+
+// ======================================================
+// تنظيف المصطلحات
+// ======================================================
+
+function normalizeKeyTerms(value) {
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+
+  return value
+    .map(item => {
+
+      if (typeof item === "string") {
+        return item.trim();
       }
+
 
       if (
-        term &&
-        typeof term === "object"
+        item &&
+        typeof item === "object"
       ) {
+
+        const term =
+          typeof item.term === "string"
+            ? item.term
+            : typeof item.name === "string"
+              ? item.name
+              : "";
+
+
         return {
-          term:
-            typeof term.term === "string"
-              ? term.term.trim()
-              : typeof term.name === "string"
-                ? term.name.trim()
-                : ""
+          term: term.trim()
         };
       }
+
 
       return "";
 
@@ -510,34 +596,52 @@ function normalizeKeyTerms(terms) {
         return item.length > 0;
       }
 
-      return item?.term;
+
+      return Boolean(
+        item &&
+        item.term
+      );
     });
 }
 
 
-// =====================================================
-// Definitions
-// =====================================================
+// ======================================================
+// تنظيف التعاريف
+// ======================================================
 
-function normalizeDefinitions(definitions) {
+function normalizeDefinitions(value) {
 
-  return definitions
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+
+  return value
     .map(item => {
 
-      if (!item || typeof item !== "object") {
+      if (
+        !item ||
+        typeof item !== "object"
+      ) {
         return null;
       }
 
-      return {
-        term:
-          typeof item.term === "string"
-            ? item.term.trim()
-            : "",
 
-        definition:
-          typeof item.definition === "string"
-            ? item.definition.trim()
-            : ""
+      const term =
+        typeof item.term === "string"
+          ? item.term.trim()
+          : "";
+
+
+      const definition =
+        typeof item.definition === "string"
+          ? item.definition.trim()
+          : "";
+
+
+      return {
+        term,
+        definition
       };
 
     })
@@ -549,34 +653,50 @@ function normalizeDefinitions(definitions) {
 }
 
 
-// =====================================================
-// Laws
-// =====================================================
+// ======================================================
+// تنظيف القوانين
+// ======================================================
 
-function normalizeLaws(laws) {
+function normalizeLaws(value) {
 
-  return laws
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+
+  return value
     .map(item => {
 
-      if (!item || typeof item !== "object") {
+      if (
+        !item ||
+        typeof item !== "object"
+      ) {
         return null;
       }
 
+
+      const title =
+        typeof item.title === "string"
+          ? item.title.trim()
+          : "";
+
+
+      const formula =
+        typeof item.formula === "string"
+          ? item.formula.trim()
+          : "";
+
+
+      const explanation =
+        typeof item.explanation === "string"
+          ? item.explanation.trim()
+          : "";
+
+
       return {
-        title:
-          typeof item.title === "string"
-            ? item.title.trim()
-            : "",
-
-        formula:
-          typeof item.formula === "string"
-            ? item.formula.trim()
-            : "",
-
-        explanation:
-          typeof item.explanation === "string"
-            ? item.explanation.trim()
-            : ""
+        title,
+        formula,
+        explanation
       };
 
     })
@@ -591,16 +711,24 @@ function normalizeLaws(laws) {
 }
 
 
-// =====================================================
-// Quiz
-// =====================================================
+// ======================================================
+// تنظيف الاختبار
+// ======================================================
 
-function normalizeQuiz(quiz) {
+function normalizeQuiz(value) {
 
-  return quiz
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+
+  return value
     .map(item => {
 
-      if (!item || typeof item !== "object") {
+      if (
+        !item ||
+        typeof item !== "object"
+      ) {
         return null;
       }
 
@@ -618,6 +746,12 @@ function normalizeQuiz(quiz) {
       ) {
         type = "written";
       }
+
+
+      const question =
+        typeof item.question === "string"
+          ? item.question.trim()
+          : "";
 
 
       let options =
@@ -646,17 +780,16 @@ function normalizeQuiz(quiz) {
 
         options =
           options.slice(0, 4);
-
       }
 
 
-      let answer =
+      const answer =
         typeof item.answer === "string"
           ? item.answer.trim()
           : "";
 
 
-      let acceptedAnswers =
+      const acceptedAnswers =
         Array.isArray(item.accepted_answers)
           ? item.accepted_answers
               .filter(answer =>
@@ -673,10 +806,7 @@ function normalizeQuiz(quiz) {
 
         type,
 
-        question:
-          typeof item.question === "string"
-            ? item.question.trim()
-            : "",
+        question,
 
         options,
 
@@ -684,6 +814,7 @@ function normalizeQuiz(quiz) {
 
         accepted_answers:
           acceptedAnswers
+
       };
 
     })
@@ -695,30 +826,39 @@ function normalizeQuiz(quiz) {
 }
 
 
-// =====================================================
-// Error handling for Multer
-// =====================================================
+// ======================================================
+// معالجة أخطاء Multer
+// ======================================================
 
 app.use((error, req, res, next) => {
 
   if (error instanceof multer.MulterError) {
 
-    if (error.code === "LIMIT_FILE_SIZE") {
+    if (
+      error.code === "LIMIT_FILE_SIZE"
+    ) {
+
       return res.status(400).json({
         error:
-          "حجم الصورة كبير جدًا. الحد الأقصى 10MB للصورة."
+          "حجم الصورة أكبر من 10MB."
       });
     }
 
-    if (error.code === "LIMIT_FILE_COUNT") {
+
+    if (
+      error.code === "LIMIT_FILE_COUNT"
+    ) {
+
       return res.status(400).json({
         error:
           "يمكن رفع 20 صورة كحد أقصى."
       });
     }
 
+
     return res.status(400).json({
-      error: error.message
+      error:
+        error.message
     });
   }
 
@@ -726,8 +866,9 @@ app.use((error, req, res, next) => {
   if (error) {
 
     return res.status(400).json({
-      error: error.message ||
-        "حدث خطأ."
+      error:
+        error.message ||
+        "حدث خطأ أثناء رفع الصور."
     });
   }
 
@@ -736,14 +877,14 @@ app.use((error, req, res, next) => {
 });
 
 
-// =====================================================
+// ======================================================
 // تشغيل السيرفر
-// =====================================================
+// ======================================================
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
 
   console.log(
-    `Study AI يعمل على المنفذ ${PORT}`
+    `Study AI server running on port ${PORT}`
   );
 
 });
