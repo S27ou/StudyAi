@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study AI</title>
 
   <style>
     :root {
       --bg: #050b18;
       --bg2: #081329;
-      --card: rgba(8, 20, 42, 0.82);
-      --card2: rgba(13, 29, 57, 0.9);
+      --card: rgba(8, 20, 42, .82);
+      --card2: rgba(13, 29, 57, .92);
       --primary: #168cff;
       --primary2: #7c4dff;
       --text: #f7f9ff;
       --muted: #9caaca;
-      --border: rgba(120, 170, 255, 0.18);
+      --border: rgba(120,170,255,.18);
       --success: #21d19f;
       --danger: #ff5577;
       --warning: #ffb52e;
@@ -35,43 +35,25 @@
 
     body {
       min-height: 100vh;
-      font-family:
-        "Segoe UI",
-        Tahoma,
-        Arial,
-        sans-serif;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
       color: var(--text);
       background:
-        radial-gradient(
-          circle at 85% 10%,
-          color-mix(in srgb, var(--primary) 18%, transparent),
-          transparent 30%
-        ),
-        radial-gradient(
-          circle at 10% 80%,
-          color-mix(in srgb, var(--primary2) 13%, transparent),
-          transparent 30%
-        ),
-        linear-gradient(135deg, var(--bg), var(--bg2));
-      transition:
-        background 0.35s ease,
-        color 0.35s ease;
+        radial-gradient(circle at 85% 10%, rgba(22,140,255,.16), transparent 30%),
+        radial-gradient(circle at 10% 80%, rgba(124,77,255,.12), transparent 30%),
+        linear-gradient(135deg,var(--bg),var(--bg2));
+      transition: .3s;
       overflow-x: hidden;
     }
 
     body.light {
       --text: #172033;
       --muted: #667085;
-      --card: rgba(255, 255, 255, 0.88);
-      --card2: rgba(255, 255, 255, 0.96);
-      --border: rgba(30, 50, 90, 0.12);
+      --card: rgba(255,255,255,.88);
+      --card2: rgba(255,255,255,.96);
+      --border: rgba(30,50,90,.12);
       background:
-        radial-gradient(
-          circle at 85% 10%,
-          color-mix(in srgb, var(--primary) 14%, transparent),
-          transparent 30%
-        ),
-        linear-gradient(135deg, #eef5ff, #f8fbff);
+        radial-gradient(circle at 85% 10%, rgba(22,140,255,.12), transparent 30%),
+        linear-gradient(135deg,#eef5ff,#f8fbff);
     }
 
     button,
@@ -89,47 +71,7 @@
       color: white;
     }
 
-    /* =========================
-       الخلفية والزخارف
-    ========================= */
-
-    .background-orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(70px);
-      opacity: 0.16;
-      pointer-events: none;
-      z-index: -1;
-    }
-
-    .orb1 {
-      width: 260px;
-      height: 260px;
-      background: var(--primary);
-      top: 5%;
-      right: 8%;
-    }
-
-    .orb2 {
-      width: 300px;
-      height: 300px;
-      background: var(--primary2);
-      bottom: 5%;
-      left: 5%;
-    }
-
-    /* =========================
-       التطبيق
-    ========================= */
-
-    .app {
-      min-height: 100vh;
-      display: flex;
-    }
-
-    /* =========================
-       Sidebar
-    ========================= */
+    /* ===== Sidebar ===== */
 
     .sidebar {
       width: 270px;
@@ -140,16 +82,16 @@
       bottom: 0;
       padding: 22px 18px;
       border-left: 1px solid var(--border);
-      background: rgba(3, 10, 24, 0.72);
+      background: rgba(3,10,24,.76);
       backdrop-filter: blur(24px);
       z-index: 50;
       display: flex;
       flex-direction: column;
-      transition: transform 0.3s ease;
+      transition: transform .3s;
     }
 
     body.light .sidebar {
-      background: rgba(255, 255, 255, 0.82);
+      background: rgba(255,255,255,.82);
     }
 
     .brand {
@@ -166,21 +108,14 @@
       display: grid;
       place-items: center;
       font-size: 25px;
-      background:
-        linear-gradient(135deg, var(--primary), var(--primary2));
-      box-shadow:
-        0 0 var(--glow)
-        color-mix(in srgb, var(--primary) 55%, transparent);
+      background: linear-gradient(135deg,var(--primary),var(--primary2));
+      box-shadow: 0 0 var(--glow) rgba(22,140,255,.3);
     }
 
     .brand h1 {
       font-size: 22px;
       font-weight: 900;
-      background: linear-gradient(
-        90deg,
-        var(--primary),
-        #b184ff
-      );
+      background: linear-gradient(90deg,var(--primary),#b184ff);
       -webkit-background-clip: text;
       color: transparent;
     }
@@ -207,23 +142,14 @@
       align-items: center;
       gap: 12px;
       text-align: right;
-      transition: 0.25s ease;
+      transition: .25s;
     }
 
     .nav button:hover,
     .nav button.active {
       color: white;
-      background:
-        linear-gradient(
-          90deg,
-          color-mix(in srgb, var(--primary) 20%, transparent),
-          color-mix(in srgb, var(--primary2) 14%, transparent)
-        );
-      border-color: color-mix(
-        in srgb,
-        var(--primary) 30%,
-        transparent
-      );
+      background: rgba(22,140,255,.13);
+      border-color: rgba(22,140,255,.25);
       transform: translateX(-3px);
     }
 
@@ -240,19 +166,11 @@
 
     .sidebar-bottom {
       margin-top: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
     }
 
     .sidebar-tip {
       border: 1px solid var(--border);
-      background:
-        linear-gradient(
-          145deg,
-          color-mix(in srgb, var(--primary) 10%, transparent),
-          transparent
-        );
+      background: rgba(22,140,255,.07);
       padding: 16px;
       border-radius: 18px;
       margin-bottom: 10px;
@@ -269,9 +187,7 @@
       line-height: 1.7;
     }
 
-    /* =========================
-       Main
-    ========================= */
+    /* ===== Main ===== */
 
     .main {
       width: calc(100% - 270px);
@@ -301,7 +217,6 @@
       border-radius: 17px;
       padding: 14px 48px 14px 18px;
       outline: none;
-      backdrop-filter: blur(20px);
     }
 
     .search span {
@@ -326,7 +241,7 @@
       color: var(--text);
       display: grid;
       place-items: center;
-      transition: 0.25s;
+      transition: .25s;
     }
 
     .icon-button:hover {
@@ -350,8 +265,7 @@
       border-radius: 50%;
       display: grid;
       place-items: center;
-      background:
-        linear-gradient(135deg, var(--primary), var(--primary2));
+      background: linear-gradient(135deg,var(--primary),var(--primary2));
       font-weight: 900;
     }
 
@@ -359,9 +273,7 @@
       color: var(--muted);
     }
 
-    /* =========================
-       Hero
-    ========================= */
+    /* ===== Hero ===== */
 
     .hero {
       min-height: 265px;
@@ -371,41 +283,25 @@
       border-radius: 28px;
       padding: 35px;
       background:
-        radial-gradient(
-          circle at 80% 50%,
-          color-mix(in srgb, var(--primary) 25%, transparent),
-          transparent 35%
-        ),
-        linear-gradient(
-          135deg,
-          color-mix(in srgb, var(--primary) 15%, var(--card)),
-          var(--card)
-        );
-      box-shadow:
-        0 0 var(--glow)
-        color-mix(in srgb, var(--primary) 12%, transparent);
+        radial-gradient(circle at 80% 50%,rgba(22,140,255,.2),transparent 35%),
+        linear-gradient(135deg,rgba(22,140,255,.09),var(--card));
+      box-shadow: 0 0 var(--glow) rgba(22,140,255,.1);
     }
 
     .hero-content {
       position: relative;
       z-index: 2;
-      max-width: 600px;
+      max-width: 650px;
     }
 
     .hero h2 {
-      font-size: clamp(27px, 4vw, 43px);
+      font-size: clamp(27px,4vw,43px);
       line-height: 1.25;
       margin-bottom: 12px;
     }
 
     .gradient-text {
-      background:
-        linear-gradient(
-          90deg,
-          var(--primary),
-          #9a68ff,
-          #e46cff
-        );
+      background: linear-gradient(90deg,var(--primary),#9a68ff,#e46cff);
       -webkit-background-clip: text;
       color: transparent;
     }
@@ -422,15 +318,10 @@
       top: 50%;
       transform: translateY(-50%);
       font-size: 130px;
-      opacity: 0.14;
-      filter: drop-shadow(
-        0 0 30px var(--primary)
-      );
+      opacity: .14;
     }
 
-    /* =========================
-       Buttons
-    ========================= */
+    /* ===== Buttons ===== */
 
     .primary-button {
       border: 0;
@@ -438,23 +329,13 @@
       padding: 13px 21px;
       border-radius: 14px;
       font-weight: 800;
-      background:
-        linear-gradient(
-          135deg,
-          var(--primary),
-          var(--primary2)
-        );
-      box-shadow:
-        0 8px 25px
-        color-mix(in srgb, var(--primary) 28%, transparent);
-      transition: 0.25s ease;
+      background: linear-gradient(135deg,var(--primary),var(--primary2));
+      box-shadow: 0 8px 25px rgba(22,140,255,.25);
+      transition: .25s;
     }
 
     .primary-button:hover {
       transform: translateY(-2px);
-      box-shadow:
-        0 12px 30px
-        color-mix(in srgb, var(--primary) 40%, transparent);
     }
 
     .secondary-button {
@@ -463,34 +344,25 @@
       padding: 12px 18px;
       border-radius: 14px;
       background: var(--card);
-      transition: 0.25s;
+      transition: .25s;
     }
 
     .secondary-button:hover {
       border-color: var(--primary);
     }
 
-    /* =========================
-       Stats
-    ========================= */
-
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 310px;
-      gap: 18px;
-      margin-top: 18px;
-    }
+    /* ===== Cards ===== */
 
     .quick-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4,1fr);
       gap: 14px;
+      margin-top: 18px;
     }
 
     .stat-card,
     .tool-card,
-    .section-card,
-    .lesson-card {
+    .result-card {
       border: 1px solid var(--border);
       background: var(--card);
       backdrop-filter: blur(20px);
@@ -499,15 +371,13 @@
 
     .stat-card {
       padding: 18px;
-      transition: 0.25s;
+      transition: .25s;
     }
 
     .stat-card:hover,
-    .tool-card:hover,
-    .lesson-card:hover {
+    .tool-card:hover {
       transform: translateY(-4px);
-      border-color:
-        color-mix(in srgb, var(--primary) 40%, transparent);
+      border-color: rgba(22,140,255,.35);
     }
 
     .stat-icon {
@@ -517,8 +387,7 @@
       display: grid;
       place-items: center;
       margin-bottom: 12px;
-      background:
-        color-mix(in srgb, var(--primary) 15%, transparent);
+      background: rgba(22,140,255,.12);
     }
 
     .stat-number {
@@ -531,10 +400,6 @@
       color: var(--muted);
       font-size: 12px;
     }
-
-    /* =========================
-       Tools
-    ========================= */
 
     .tools {
       margin-top: 18px;
@@ -559,14 +424,14 @@
 
     .tools-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4,1fr);
       gap: 14px;
     }
 
     .tool-card {
       padding: 18px;
       min-height: 170px;
-      transition: 0.25s;
+      transition: .25s;
     }
 
     .tool-card .tool-icon {
@@ -586,35 +451,25 @@
       margin-bottom: 13px;
     }
 
-    /* =========================
-       Upload
-    ========================= */
+    /* ===== Upload ===== */
 
     .upload-section {
       margin-top: 18px;
     }
 
     .upload-box {
-      border: 1.5px dashed
-        color-mix(in srgb, var(--primary) 45%, var(--border));
-      background:
-        linear-gradient(
-          145deg,
-          color-mix(in srgb, var(--primary) 7%, transparent),
-          var(--card)
-        );
+      border: 1.5px dashed rgba(22,140,255,.45);
+      background: linear-gradient(145deg,rgba(22,140,255,.07),var(--card));
       border-radius: 24px;
       padding: 32px;
       text-align: center;
-      transition: 0.25s;
+      transition: .25s;
     }
 
     .upload-box.dragover {
       border-color: var(--primary);
       transform: scale(1.01);
-      box-shadow:
-        0 0 30px
-        color-mix(in srgb, var(--primary) 20%, transparent);
+      box-shadow: 0 0 30px rgba(22,140,255,.2);
     }
 
     .upload-icon {
@@ -625,12 +480,7 @@
       place-items: center;
       margin: 0 auto 14px;
       font-size: 32px;
-      background:
-        linear-gradient(
-          135deg,
-          color-mix(in srgb, var(--primary) 20%, transparent),
-          color-mix(in srgb, var(--primary2) 18%, transparent)
-        );
+      background: rgba(22,140,255,.12);
     }
 
     .upload-box h3 {
@@ -647,13 +497,9 @@
       display: none;
     }
 
-    /* =========================
-       Preview
-    ========================= */
-
     .preview-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
       gap: 12px;
       margin-top: 15px;
     }
@@ -664,14 +510,13 @@
       border-radius: 17px;
       border: 1px solid var(--border);
       background: var(--card2);
-      aspect-ratio: 1 / 0.72;
+      aspect-ratio: 1/.72;
     }
 
     .preview-item img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
     }
 
     .remove-image {
@@ -682,14 +527,39 @@
       height: 31px;
       border: 0;
       border-radius: 10px;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,.7);
       color: white;
       font-size: 16px;
     }
 
-    /* =========================
-       Results
-    ========================= */
+    .status {
+      display: none;
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      display: inline-block;
+      border: 3px solid rgba(22,140,255,.18);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      vertical-align: middle;
+      margin-left: 7px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ===== Results ===== */
 
     #results {
       display: none;
@@ -700,12 +570,7 @@
       padding: 22px;
       border-radius: 22px;
       border: 1px solid var(--border);
-      background:
-        linear-gradient(
-          135deg,
-          color-mix(in srgb, var(--primary) 13%, var(--card)),
-          var(--card)
-        );
+      background: linear-gradient(135deg,rgba(22,140,255,.12),var(--card));
       margin-bottom: 15px;
     }
 
@@ -725,21 +590,15 @@
     }
 
     .result-card {
-      border: 1px solid var(--border);
-      background: var(--card);
-      border-radius: 20px;
       padding: 20px;
     }
 
     .result-card.full {
-      grid-column: 1 / -1;
+      grid-column: 1/-1;
     }
 
     .result-card h3 {
       margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
 
     .result-content {
@@ -757,8 +616,7 @@
     .list-item {
       padding: 12px 14px;
       border-radius: 13px;
-      background:
-        color-mix(in srgb, var(--primary) 6%, transparent);
+      background: rgba(22,140,255,.06);
       border: 1px solid var(--border);
       line-height: 1.7;
     }
@@ -772,11 +630,8 @@
     .term {
       padding: 8px 12px;
       border-radius: 999px;
-      background:
-        color-mix(in srgb, var(--primary) 12%, transparent);
-      border: 1px solid
-        color-mix(in srgb, var(--primary) 20%, transparent);
-      color: var(--text);
+      background: rgba(22,140,255,.12);
+      border: 1px solid rgba(22,140,255,.2);
       font-size: 13px;
     }
 
@@ -787,6 +642,7 @@
       background: var(--card2);
       border: 1px solid var(--border);
       margin-bottom: 10px;
+      line-height: 1.8;
     }
 
     .definition strong,
@@ -799,16 +655,13 @@
       padding: 13px;
       margin: 10px 0;
       border-radius: 12px;
-      background:
-        color-mix(in srgb, var(--primary) 9%, transparent);
+      background: rgba(22,140,255,.09);
       direction: ltr;
       text-align: center;
       font-weight: 800;
     }
 
-    /* =========================
-       Quiz
-    ========================= */
+    /* ===== Quiz ===== */
 
     .quiz-question {
       padding: 19px;
@@ -839,13 +692,12 @@
       border-radius: 12px;
       margin-top: 8px;
       cursor: pointer;
-      transition: 0.2s;
+      transition: .2s;
     }
 
     .option:hover {
       border-color: var(--primary);
-      background:
-        color-mix(in srgb, var(--primary) 7%, transparent);
+      background: rgba(22,140,255,.07);
     }
 
     .option input {
@@ -882,15 +734,13 @@
 
     .question-result.correct {
       display: block;
-      background:
-        color-mix(in srgb, var(--success) 12%, transparent);
+      background: rgba(33,209,159,.12);
       color: var(--success);
     }
 
     .question-result.wrong {
       display: block;
-      background:
-        color-mix(in srgb, var(--danger) 12%, transparent);
+      background: rgba(255,85,119,.12);
       color: var(--danger);
     }
 
@@ -901,69 +751,23 @@
       margin-bottom: 16px;
       border: 1px solid var(--border);
       text-align: center;
-      background:
-        linear-gradient(
-          135deg,
-          color-mix(in srgb, var(--primary) 12%, var(--card)),
-          var(--card)
-        );
+      background: linear-gradient(135deg,rgba(22,140,255,.12),var(--card));
     }
 
     .score-number {
       font-size: 42px;
       font-weight: 1000;
-      background:
-        linear-gradient(
-          90deg,
-          var(--primary),
-          var(--primary2)
-        );
+      background: linear-gradient(90deg,var(--primary),var(--primary2));
       -webkit-background-clip: text;
       color: transparent;
     }
 
-    /* =========================
-       Loading
-    ========================= */
-
-    .status {
-      display: none;
-      margin-top: 14px;
-      padding: 14px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--muted);
-      text-align: center;
-    }
-
-    .spinner {
-      width: 22px;
-      height: 22px;
-      display: inline-block;
-      border: 3px solid
-        color-mix(in srgb, var(--primary) 18%, transparent);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      vertical-align: middle;
-      margin-left: 7px;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    /* =========================
-       Appearance Panel
-    ========================= */
+    /* ===== Appearance ===== */
 
     .appearance-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.45);
+      background: rgba(0,0,0,.45);
       backdrop-filter: blur(4px);
       z-index: 90;
       display: none;
@@ -981,18 +785,17 @@
       width: 330px;
       border-radius: 25px;
       border: 1px solid var(--border);
-      background:
-        rgba(5, 13, 29, 0.94);
+      background: rgba(5,13,29,.96);
       backdrop-filter: blur(25px);
       z-index: 100;
       padding: 20px;
       transform: translateX(-370px);
-      transition: 0.3s ease;
+      transition: .3s;
       overflow-y: auto;
     }
 
     body.light .appearance-panel {
-      background: rgba(255,255,255,0.96);
+      background: rgba(255,255,255,.96);
     }
 
     .appearance-panel.open {
@@ -1004,10 +807,6 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 22px;
-    }
-
-    .appearance-header h3 {
-      font-size: 19px;
     }
 
     .close-panel {
@@ -1036,14 +835,13 @@
       align-items: center;
     }
 
-    .color-control input[type="color"] {
+    .color-control input[type=color] {
       width: 52px;
       height: 42px;
       border: 0;
       padding: 0;
       border-radius: 12px;
       background: transparent;
-      cursor: pointer;
     }
 
     .color-value {
@@ -1059,7 +857,7 @@
 
     .presets {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3,1fr);
       gap: 9px;
     }
 
@@ -1100,19 +898,212 @@
 
     .theme-button.active {
       border-color: var(--primary);
-      box-shadow:
-        0 0 15px
-        color-mix(in srgb, var(--primary) 18%, transparent);
     }
 
     .reset-button {
       width: 100%;
-      margin-top: 8px;
     }
 
-    /* =========================
-       Toast
-    ========================= */
+    /* ===== AI Assistant ===== */
+
+    .ai-assistant-button {
+      position: fixed;
+      left: 25px;
+      bottom: 25px;
+      width: 62px;
+      height: 62px;
+      border: 0;
+      border-radius: 20px;
+      color: white;
+      font-size: 28px;
+      cursor: pointer;
+      z-index: 150;
+      background: linear-gradient(135deg,var(--primary),var(--primary2));
+      box-shadow: 0 10px 35px rgba(22,140,255,.35);
+      transition: .25s;
+    }
+
+    .ai-assistant-button:hover {
+      transform: translateY(-5px) scale(1.04);
+    }
+
+    .ai-assistant-panel {
+      position: fixed;
+      left: 25px;
+      bottom: 100px;
+      width: 390px;
+      max-width: calc(100vw - 30px);
+      height: 590px;
+      max-height: calc(100vh - 130px);
+      background: rgba(6,14,30,.97);
+      border: 1px solid var(--border);
+      border-radius: 25px;
+      backdrop-filter: blur(25px);
+      box-shadow: 0 25px 70px rgba(0,0,0,.35);
+      z-index: 149;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    body.light .ai-assistant-panel {
+      background: rgba(255,255,255,.97);
+    }
+
+    .ai-assistant-panel.open {
+      display: flex;
+      animation: assistantOpen .25s ease;
+    }
+
+    @keyframes assistantOpen {
+      from {
+        opacity: 0;
+        transform: translateY(15px) scale(.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .ai-assistant-header {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(22,140,255,.08);
+    }
+
+    .ai-assistant-title {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .ai-assistant-avatar {
+      width: 43px;
+      height: 43px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 23px;
+      background: linear-gradient(135deg,var(--primary),var(--primary2));
+    }
+
+    .ai-assistant-title strong {
+      display: block;
+    }
+
+    .ai-assistant-title small {
+      color: var(--success);
+      font-size: 11px;
+    }
+
+    .ai-close {
+      width: 37px;
+      height: 37px;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .ai-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .ai-message {
+      max-width: 88%;
+      padding: 11px 13px;
+      border-radius: 15px;
+      line-height: 1.8;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    .ai-message.bot {
+      align-self: flex-start;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-top-left-radius: 5px;
+    }
+
+    .ai-message.user {
+      align-self: flex-end;
+      color: white;
+      background: linear-gradient(135deg,var(--primary),var(--primary2));
+      border-top-right-radius: 5px;
+    }
+
+    .ai-quick-actions {
+      padding: 8px 12px;
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      border-top: 1px solid var(--border);
+    }
+
+    .ai-quick-actions button {
+      flex: 0 0 auto;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 11px;
+    }
+
+    .ai-input-area {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .ai-input {
+      flex: 1;
+      min-width: 0;
+      resize: none;
+      height: 45px;
+      max-height: 120px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: var(--card);
+      color: var(--text);
+      outline: none;
+      padding: 11px;
+    }
+
+    .ai-send {
+      width: 45px;
+      height: 45px;
+      flex-shrink: 0;
+      border: 0;
+      border-radius: 13px;
+      color: white;
+      background: linear-gradient(135deg,var(--primary),var(--primary2));
+      font-size: 18px;
+    }
+
+    .ai-typing {
+      display: none;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 5px 15px;
+    }
+
+    .ai-typing.show {
+      display: block;
+    }
+
+    /* ===== Toast ===== */
 
     .toast {
       position: fixed;
@@ -1124,10 +1115,9 @@
       background: #101a2d;
       color: white;
       border: 1px solid var(--border);
-      box-shadow: 0 15px 35px rgba(0,0,0,0.25);
       transform: translateY(120px);
       opacity: 0;
-      transition: 0.3s;
+      transition: .3s;
       z-index: 200;
     }
 
@@ -1136,26 +1126,18 @@
       opacity: 1;
     }
 
-    /* =========================
-       Mobile
-    ========================= */
-
     .mobile-menu {
       display: none;
     }
 
-    @media (max-width: 1150px) {
+    @media(max-width:1150px) {
       .quick-grid,
       .tools-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .dashboard-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2,1fr);
       }
     }
 
-    @media (max-width: 850px) {
+    @media(max-width:850px) {
       .sidebar {
         transform: translateX(100%);
       }
@@ -1184,16 +1166,12 @@
         max-width: none;
       }
 
-      .hero {
-        padding: 25px;
-      }
-
       .hero-ai {
         display: none;
       }
     }
 
-    @media (max-width: 650px) {
+    @media(max-width:650px) {
       .quick-grid,
       .tools-grid,
       .result-grid {
@@ -1213,8 +1191,15 @@
         left: 15px;
       }
 
-      .hero h2 {
-        font-size: 27px;
+      .ai-assistant-panel {
+        left: 15px;
+        bottom: 90px;
+        width: calc(100vw - 30px);
+      }
+
+      .ai-assistant-button {
+        left: 15px;
+        bottom: 15px;
       }
     }
   </style>
@@ -1222,210 +1207,445 @@
 
 <body>
 
-  <div class="background-orb orb1"></div>
-  <div class="background-orb orb2"></div>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
 
-  <div class="app">
+    <div class="brand">
+      <div class="brand-icon">🎓</div>
 
-    <!-- =========================
-         Sidebar
-    ========================== -->
-    <aside class="sidebar" id="sidebar">
+      <div>
+        <h1>Study AI</h1>
+        <p>مستقبلك يبدأ من هنا ✨</p>
+      </div>
+    </div>
 
-      <div class="brand">
-        <div class="brand-icon">🎓</div>
+    <nav class="nav">
 
-        <div>
-          <h1>Study AI</h1>
-          <p>مستقبلك يبدأ من هنا ✨</p>
-        </div>
+      <button class="active" onclick="scrollToSection('home')">
+        <span class="nav-icon">🏠</span>
+        الرئيسية
+      </button>
+
+      <button onclick="scrollToSection('analyzer')">
+        <span class="nav-icon">🖼️</span>
+        تحليل الدروس
+      </button>
+
+      <button onclick="scrollToSection('results')">
+        <span class="nav-icon">📝</span>
+        الاختبارات
+      </button>
+
+      <button onclick="scrollToSection('summary')">
+        <span class="nav-icon">📚</span>
+        الملخصات
+      </button>
+
+      <button onclick="openAIAssistant()">
+        <span class="nav-icon">🤖</span>
+        مساعد الذكاء
+      </button>
+
+      <button onclick="showToast('ميزة خطط المذاكرة قادمة قريبًا 🚀')">
+        <span class="nav-icon">📅</span>
+        خطط المذاكرة
+      </button>
+
+      <button onclick="showToast('الإحصائيات المتقدمة قادمة قريبًا 📊')">
+        <span class="nav-icon">📈</span>
+        متابعة المستوى
+      </button>
+
+    </nav>
+
+    <div class="sidebar-bottom">
+
+      <div class="sidebar-tip">
+        <strong>💡 نصيحة اليوم</strong>
+        <span>
+          ذاكر بذكاء، اختبر نفسك، وراجع أخطاءك باستمرار.
+        </span>
       </div>
 
-      <nav class="nav">
+      <div class="nav">
 
-        <button class="active" onclick="scrollToSection('home')">
-          <span class="nav-icon">🏠</span>
-          <span>الرئيسية</span>
+        <button onclick="openAppearance()">
+          <span class="nav-icon">🎨</span>
+          تخصيص المظهر
         </button>
 
-        <button onclick="scrollToSection('analyzer')">
-          <span class="nav-icon">🖼️</span>
-          <span>تحليل الدروس</span>
-        </button>
-
-        <button onclick="scrollToSection('results')">
-          <span class="nav-icon">📝</span>
-          <span>الاختبارات</span>
-        </button>
-
-        <button onclick="scrollToSection('summary')">
-          <span class="nav-icon">📚</span>
-          <span>الملخصات</span>
-        </button>
-
-        <button onclick="showToast('ميزة خطط المذاكرة قادمة قريبًا 🚀')">
-          <span class="nav-icon">📅</span>
-          <span>خطط المذاكرة</span>
-        </button>
-
-        <button onclick="showToast('مساعد الذكاء الاصطناعي قادم قريبًا 🤖')">
-          <span class="nav-icon">🤖</span>
-          <span>مساعد الذكاء الاصطناعي</span>
-        </button>
-
-        <button onclick="showToast('إحصائيات مستواك ستظهر هنا 📊')">
-          <span class="nav-icon">📈</span>
-          <span>متابعة المستوى</span>
-        </button>
-
-      </nav>
-
-      <div class="sidebar-bottom">
-
-        <div class="sidebar-tip">
-          <strong>💡 نصيحة اليوم</strong>
-          <span>
-            ذاكر بذكاء، اختبر نفسك، وراجع أخطاءك باستمرار.
-          </span>
-        </div>
-
-        <button class="nav" style="border:0;background:none;padding:0;">
-          <button onclick="openAppearance()">
-            <span class="nav-icon">⚙️</span>
-            <span>تخصيص المظهر</span>
-          </button>
-
-          <button onclick="toggleTheme()">
-            <span class="nav-icon">🌙</span>
-            <span>الوضع الليلي</span>
-          </button>
+        <button onclick="toggleTheme()">
+          <span class="nav-icon">🌙</span>
+          الوضع الليلي
         </button>
 
       </div>
-    </aside>
 
-    <!-- =========================
-         Main
-    ========================== -->
-    <main class="main" id="home">
+    </div>
 
-      <header class="topbar">
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="home">
+
+    <header class="topbar">
+
+      <button
+        class="icon-button mobile-menu"
+        onclick="toggleSidebar()"
+      >
+        ☰
+      </button>
+
+      <div class="search">
+        <span>🔎</span>
+        <input
+          id="searchInput"
+          type="text"
+          placeholder="ابحث عن أي شيء..."
+          oninput="handleSearch()"
+        >
+      </div>
+
+      <div class="top-actions">
 
         <button
-          class="icon-button mobile-menu"
-          onclick="toggleSidebar()"
-          aria-label="القائمة"
+          class="icon-button"
+          onclick="openAppearance()"
+          title="المظهر"
         >
-          ☰
+          🎨
         </button>
 
-        <div class="search">
-          <span>🔎</span>
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="ابحث عن أي شيء..."
-            oninput="handleSearch()"
-          />
-        </div>
+        <button
+          class="icon-button"
+          onclick="openAIAssistant()"
+          title="مساعد الذكاء"
+        >
+          🤖
+        </button>
 
-        <div class="top-actions">
+        <div class="profile">
+          <div class="avatar">س</div>
 
-          <button
-            class="icon-button"
-            onclick="openAppearance()"
-            title="تخصيص المظهر"
-          >
-            🎨
-          </button>
-
-          <button
-            class="icon-button"
-            onclick="showToast('لا توجد إشعارات جديدة 🔔')"
-          >
-            🔔
-          </button>
-
-          <div class="profile">
-            <div class="avatar">س</div>
-
-            <div class="profile-info">
-              <strong>الطالب</strong>
-              <br />
-              <small>مستعد للتفوق 🚀</small>
-            </div>
+          <div class="profile-info">
+            <strong>الطالب</strong>
+            <br>
+            <small>مستعد للتفوق 🚀</small>
           </div>
-
         </div>
 
-      </header>
+      </div>
 
-      <!-- =========================
-           Hero
-      ========================== -->
+    </header>
 
-      <section class="hero">
+    <!-- Hero -->
+    <section class="hero">
 
-        <div class="hero-content">
+      <div class="hero-content">
 
-          <h2>
-            مرحبًا بك في
-            <span class="gradient-text">Study AI</span>
-          </h2>
+        <h2>
+          مرحبًا بك في
+          <span class="gradient-text">Study AI</span>
+        </h2>
 
-          <p>
-            ارفع صور دروسك، ودع الذكاء الاصطناعي يحللها
-            ويحولها إلى شرح مبسط وملخص وأسئلة واختبار كامل.
-          </p>
+        <p>
+          ارفع صور دروسك، ودع الذكاء الاصطناعي يحللها
+          ويحولها إلى شرح مبسط وملخص وأسئلة واختبار كامل.
+        </p>
 
+        <button
+          class="primary-button"
+          onclick="scrollToSection('analyzer')"
+        >
+          ابدأ الآن ←
+        </button>
+
+      </div>
+
+      <div class="hero-ai">🧠</div>
+
+    </section>
+
+    <!-- Stats -->
+    <div class="quick-grid">
+
+      <div class="stat-card">
+        <div class="stat-icon">🖼️</div>
+        <div class="stat-number" id="lessonsCount">0</div>
+        <div class="stat-label">الدروس المحللة</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">✓</div>
+        <div class="stat-number" id="testsCount">0</div>
+        <div class="stat-label">الاختبارات المكتملة</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-number">1</div>
+        <div class="stat-label">أيام المذاكرة المتتالية</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">📈</div>
+        <div class="stat-number" id="accuracyStat">0%</div>
+        <div class="stat-label">متوسط الإنجاز</div>
+      </div>
+
+    </div>
+
+    <!-- Tools -->
+    <section class="tools">
+
+      <div class="section-title">
+        <h3>⚡ أدوات سريعة</h3>
+        <span>ابدأ من هنا</span>
+      </div>
+
+      <div class="tools-grid">
+
+        <div class="tool-card">
+          <div class="tool-icon">🖼️</div>
+          <h4>تحليل الدروس</h4>
+          <p>ارفع صور الدرس وسيقوم الذكاء الاصطناعي بفهم المحتوى.</p>
           <button
             class="primary-button"
             onclick="scrollToSection('analyzer')"
           >
-            ابدأ الآن ←
+            ابدأ الآن →
           </button>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-icon">🤖</div>
+          <h4>مساعد الذكاء</h4>
+          <p>اسأل المساعد عن الدرس أو اطلب منه شرح أي نقطة.</p>
+          <button
+            class="secondary-button"
+            onclick="openAIAssistant()"
+          >
+            افتح المساعد
+          </button>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-icon">📝</div>
+          <h4>اختبار ذكي</h4>
+          <p>أنشئ اختبارًا متنوعًا من محتوى الدرس.</p>
+          <button
+            class="secondary-button"
+            onclick="scrollToSection('results')"
+          >
+            فتح الاختبار
+          </button>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-icon">📚</div>
+          <h4>ملخص الدرس</h4>
+          <p>احصل على أهم المعلومات بطريقة سهلة وسريعة.</p>
+          <button
+            class="secondary-button"
+            onclick="scrollToSection('summary')"
+          >
+            عرض الملخص
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Analyzer -->
+    <section
+      class="upload-section"
+      id="analyzer"
+    >
+
+      <div class="section-title">
+        <h3>🧠 تحليل درس جديد</h3>
+        <span>الخطوة الأولى نحو الفهم</span>
+      </div>
+
+      <div
+        class="upload-box"
+        id="uploadBox"
+      >
+
+        <div class="upload-icon">📸</div>
+
+        <h3>ارفع صور الدرس</h3>
+
+        <p>
+          اسحب الصور هنا أو اضغط لاختيار الصور من جهازك
+        </p>
+
+        <input
+          type="file"
+          id="fileInput"
+          accept="image/*"
+          multiple
+        >
+
+        <button
+          class="primary-button"
+          onclick="document.getElementById('fileInput').click()"
+        >
+          📁 اختيار الصور
+        </button>
+
+      </div>
+
+      <div
+        class="preview-grid"
+        id="previewGrid"
+      ></div>
+
+      <div
+        class="status"
+        id="status"
+      ></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+
+        <button
+          class="primary-button"
+          id="analyzeButton"
+          onclick="analyzeLesson()"
+        >
+          🤖 تحليل الدرس
+        </button>
+
+        <button
+          class="secondary-button"
+          onclick="clearImages()"
+        >
+          🗑️ حذف الصور
+        </button>
+
+      </div>
+
+    </section>
+
+    <!-- Results -->
+    <section id="results">
+
+      <div class="results-header">
+
+        <h2>✨ نتيجة تحليل الدرس</h2>
+
+        <p>
+          تم تحليل محتوى الصور واستخراج المعلومات والأسئلة.
+        </p>
+
+      </div>
+
+      <div class="result-grid">
+
+        <div
+          class="result-card full"
+          id="summary"
+        >
+
+          <h3>📚 ملخص الدرس</h3>
+
+          <div
+            class="result-content"
+            id="summaryContent"
+          ></div>
 
         </div>
 
-        <div class="hero-ai">
-          🧠
+        <div class="result-card">
+
+          <h3>💡 الشرح المبسط</h3>
+
+          <div
+            class="result-content"
+            id="explanationContent"
+          ></div>
+
         </div>
 
-      </section>
+        <div class="result-card">
 
-      <!-- =========================
-           Stats
-      ========================== -->
+          <h3>⭐ أهم النقاط</h3>
 
-      <div class="dashboard-grid">
+          <div
+            class="list"
+            id="importantPoints"
+          ></div>
 
-        <div>
+        </div>
 
-          <div class="quick-grid">
+        <div class="result-card">
 
-            <div class="stat-card">
-              <div class="stat-icon">🖼️</div>
-              <div class="stat-number" id="lessonsCount">0</div>
-              <div class="stat-label">الدروس المحللة</div>
+          <h3>🔑 المصطلحات المهمة</h3>
+
+          <div
+            class="terms"
+            id="keyTerms"
+          ></div>
+
+        </div>
+
+        <div class="result-card">
+
+          <h3>📖 التعاريف</h3>
+
+          <div id="definitions"></div>
+
+        </div>
+
+        <div class="result-card">
+
+          <h3>📐 القوانين والمعادلات</h3>
+
+          <div id="laws"></div>
+
+        </div>
+
+        <div class="result-card full">
+
+          <h3>📝 الاختبار</h3>
+
+          <div
+            class="score-box"
+            id="scoreBox"
+          >
+
+            <div>نتيجتك</div>
+
+            <div
+              class="score-number"
+              id="scoreNumber"
+            >
+              0%
             </div>
 
-            <div class="stat-card">
-              <div class="stat-icon">✓</div>
-              <div class="stat-number" id="testsCount">0</div>
-              <div class="stat-label">الاختبارات المكتملة</div>
-            </div>
+            <div id="scoreText"></div>
 
-            <div class="stat-card">
-              <div class="stat-icon">🔥</div>
-              <div class="stat-number">1</div>
-              <div class="stat-label">أيام المذاكرة المتتالية</div>
-            </div>
+          </div>
 
-            <div class="stat-card">
-              <div class="stat-icon">📈</div>
-              <div class="stat-number" id="accuracyStat">0%</div>
-              <div class="stat-label">متوسط الإنجاز</div>
-            </div>
+          <div id="quiz"></div>
+
+          <div class="quiz-actions">
+
+            <button
+              class="primary-button"
+              onclick="gradeQuiz()"
+            >
+              💯 تصحيح الاختبار
+            </button>
+
+            <button
+              class="secondary-button"
+              onclick="revealAnswers()"
+            >
+              👁️ إظهار الإجابات
+            </button>
 
           </div>
 
@@ -1433,299 +1653,11 @@
 
       </div>
 
-      <!-- =========================
-           Tools
-      ========================== -->
+    </section>
 
-      <section class="tools">
+  </main>
 
-        <div class="section-title">
-          <h3>⚡ أدوات سريعة</h3>
-          <span>ابدأ من هنا</span>
-        </div>
-
-        <div class="tools-grid">
-
-          <div class="tool-card">
-            <div class="tool-icon">🖼️</div>
-            <h4>تحليل الدروس</h4>
-            <p>
-              ارفع صور الدرس وسيقوم الذكاء الاصطناعي بفهم المحتوى.
-            </p>
-            <button
-              class="primary-button"
-              onclick="scrollToSection('analyzer')"
-            >
-              ابدأ الآن →
-            </button>
-          </div>
-
-          <div class="tool-card">
-            <div class="tool-icon">📝</div>
-            <h4>اختبار ذكي</h4>
-            <p>
-              أنشئ اختبارًا متنوعًا من محتوى الدرس.
-            </p>
-            <button
-              class="secondary-button"
-              onclick="scrollToSection('results')"
-            >
-              فتح الاختبار
-            </button>
-          </div>
-
-          <div class="tool-card">
-            <div class="tool-icon">📚</div>
-            <h4>ملخص الدرس</h4>
-            <p>
-              احصل على أهم المعلومات بطريقة سهلة وسريعة.
-            </p>
-            <button
-              class="secondary-button"
-              onclick="scrollToSection('summary')"
-            >
-              عرض الملخص
-            </button>
-          </div>
-
-          <div class="tool-card">
-            <div class="tool-icon">🎯</div>
-            <h4>مراجعة الأخطاء</h4>
-            <p>
-              بعد الاختبار ركز على الأسئلة التي أخطأت فيها.
-            </p>
-            <button
-              class="secondary-button"
-              onclick="showToast('ستتوفر مراجعة الأخطاء قريبًا 🔥')"
-            >
-              قريبًا
-            </button>
-          </div>
-
-        </div>
-
-      </section>
-
-      <!-- =========================
-           Analyzer
-      ========================== -->
-
-      <section
-        class="upload-section"
-        id="analyzer"
-      >
-
-        <div class="section-title">
-          <h3>🧠 تحليل درس جديد</h3>
-          <span>الخطوة الأولى نحو الفهم</span>
-        </div>
-
-        <div
-          class="upload-box"
-          id="uploadBox"
-        >
-
-          <div class="upload-icon">📸</div>
-
-          <h3>ارفع صور الدرس</h3>
-
-          <p>
-            اسحب الصور هنا أو اضغط لاختيار الصور من جهازك
-          </p>
-
-          <input
-            type="file"
-            id="fileInput"
-            accept="image/*"
-            multiple
-          />
-
-          <button
-            class="primary-button"
-            onclick="document.getElementById('fileInput').click()"
-          >
-            📁 اختيار الصور
-          </button>
-
-        </div>
-
-        <div
-          class="preview-grid"
-          id="previewGrid"
-        ></div>
-
-        <div
-          class="status"
-          id="status"
-        ></div>
-
-        <div
-          style="
-            display:flex;
-            gap:10px;
-            flex-wrap:wrap;
-            margin-top:14px;
-          "
-        >
-
-          <button
-            class="primary-button"
-            id="analyzeButton"
-            onclick="analyzeLesson()"
-          >
-            🤖 تحليل الدرس
-          </button>
-
-          <button
-            class="secondary-button"
-            onclick="clearImages()"
-          >
-            🗑️ حذف الصور
-          </button>
-
-        </div>
-
-      </section>
-
-      <!-- =========================
-           Results
-      ========================== -->
-
-      <section id="results">
-
-        <div class="results-header">
-
-          <h2>✨ نتيجة تحليل الدرس</h2>
-
-          <p>
-            تم تحليل محتوى الصور واستخراج المعلومات والأسئلة.
-          </p>
-
-        </div>
-
-        <div class="result-grid">
-
-          <div
-            class="result-card full"
-            id="summary"
-          >
-
-            <h3>📚 ملخص الدرس</h3>
-
-            <div
-              class="result-content"
-              id="summaryContent"
-            ></div>
-
-          </div>
-
-          <div class="result-card">
-
-            <h3>💡 الشرح المبسط</h3>
-
-            <div
-              class="result-content"
-              id="explanationContent"
-            ></div>
-
-          </div>
-
-          <div class="result-card">
-
-            <h3>⭐ أهم النقاط</h3>
-
-            <div
-              class="list"
-              id="importantPoints"
-            ></div>
-
-          </div>
-
-          <div class="result-card">
-
-            <h3>🔑 المصطلحات المهمة</h3>
-
-            <div
-              class="terms"
-              id="keyTerms"
-            ></div>
-
-          </div>
-
-          <div class="result-card">
-
-            <h3>📖 التعاريف</h3>
-
-            <div
-              id="definitions"
-            ></div>
-
-          </div>
-
-          <div class="result-card">
-
-            <h3>📐 القوانين والمعادلات</h3>
-
-            <div
-              id="laws"
-            ></div>
-
-          </div>
-
-          <div class="result-card full">
-
-            <h3>📝 الاختبار</h3>
-
-            <div
-              class="score-box"
-              id="scoreBox"
-            >
-              <div>نتيجتك</div>
-              <div
-                class="score-number"
-                id="scoreNumber"
-              >
-                0%
-              </div>
-              <div
-                id="scoreText"
-              ></div>
-            </div>
-
-            <div id="quiz"></div>
-
-            <div class="quiz-actions">
-
-              <button
-                class="primary-button"
-                onclick="gradeQuiz()"
-              >
-                💯 تصحيح الاختبار
-              </button>
-
-              <button
-                class="secondary-button"
-                onclick="revealAnswers()"
-              >
-                👁️ إظهار الإجابات
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-    </main>
-
-  </div>
-
-  <!-- =========================
-       Appearance Panel
-  ========================== -->
-
+  <!-- Appearance -->
   <div
     class="appearance-overlay"
     id="appearanceOverlay"
@@ -1738,7 +1670,6 @@
   >
 
     <div class="appearance-header">
-
       <h3>🎨 تخصيص المظهر</h3>
 
       <button
@@ -1747,7 +1678,6 @@
       >
         ✕
       </button>
-
     </div>
 
     <div class="setting-group">
@@ -1760,8 +1690,7 @@
           type="color"
           id="primaryColor"
           value="#168cff"
-          onchange="updatePrimaryColor(this.value)"
-        />
+        >
 
         <div
           class="color-value"
@@ -1784,8 +1713,7 @@
           type="color"
           id="backgroundColor"
           value="#050b18"
-          onchange="updateBackgroundColor(this.value)"
-        />
+        >
 
         <div
           class="color-value"
@@ -1808,10 +1736,7 @@
           class="preset"
           onclick="applyPreset('#168cff','#050b18')"
         >
-          <div
-            class="preset-color"
-            style="background:#168cff"
-          ></div>
+          <div class="preset-color" style="background:#168cff"></div>
           Ocean
         </button>
 
@@ -1819,10 +1744,7 @@
           class="preset"
           onclick="applyPreset('#8b5cf6','#090512')"
         >
-          <div
-            class="preset-color"
-            style="background:#8b5cf6"
-          ></div>
+          <div class="preset-color" style="background:#8b5cf6"></div>
           Purple
         </button>
 
@@ -1830,10 +1752,7 @@
           class="preset"
           onclick="applyPreset('#10b981','#03120e')"
         >
-          <div
-            class="preset-color"
-            style="background:#10b981"
-          ></div>
+          <div class="preset-color" style="background:#10b981"></div>
           Emerald
         </button>
 
@@ -1841,10 +1760,7 @@
           class="preset"
           onclick="applyPreset('#ec4899','#16030d')"
         >
-          <div
-            class="preset-color"
-            style="background:#ec4899"
-          ></div>
+          <div class="preset-color" style="background:#ec4899"></div>
           Pink
         </button>
 
@@ -1852,10 +1768,7 @@
           class="preset"
           onclick="applyPreset('#f59e0b','#160e03')"
         >
-          <div
-            class="preset-color"
-            style="background:#f59e0b"
-          ></div>
+          <div class="preset-color" style="background:#f59e0b"></div>
           Sunset
         </button>
 
@@ -1863,10 +1776,7 @@
           class="preset"
           onclick="applyPreset('#06b6d4','#031217')"
         >
-          <div
-            class="preset-color"
-            style="background:#06b6d4"
-          ></div>
+          <div class="preset-color" style="background:#06b6d4"></div>
           Cyan
         </button>
 
@@ -1888,8 +1798,7 @@
         min="0"
         max="60"
         value="28"
-        oninput="updateGlow(this.value)"
-      />
+      >
 
     </div>
 
@@ -1928,21 +1837,116 @@
 
   </aside>
 
+  <!-- AI Assistant -->
+  <button
+    class="ai-assistant-button"
+    onclick="toggleAIAssistant()"
+    title="مساعد الذكاء الاصطناعي"
+  >
+    🤖
+  </button>
+
+  <div
+    class="ai-assistant-panel"
+    id="aiAssistantPanel"
+  >
+
+    <div class="ai-assistant-header">
+
+      <div class="ai-assistant-title">
+
+        <div class="ai-assistant-avatar">
+          🤖
+        </div>
+
+        <div>
+          <strong>مساعد Study AI</strong>
+          <small>● متصل</small>
+        </div>
+
+      </div>
+
+      <button
+        class="ai-close"
+        onclick="toggleAIAssistant()"
+      >
+        ✕
+      </button>
+
+    </div>
+
+    <div
+      class="ai-messages"
+      id="aiMessages"
+    >
+
+      <div class="ai-message bot">
+        👋 هلا! أنا مساعد Study AI.
+
+        أقدر أساعدك في فهم الدرس، شرح أي نقطة، أو أسوي لك اختبار.
+
+        حلل درس أولًا إذا تبي إجاباتي تكون مبنية على محتوى الدرس 📚
+      </div>
+
+    </div>
+
+    <div
+      class="ai-typing"
+      id="aiTyping"
+    >
+      🤖 المساعد يكتب...
+    </div>
+
+    <div class="ai-quick-actions">
+
+      <button onclick="askAIQuick('اشرح لي الدرس بطريقة سهلة')">
+        📚 اشرح الدرس
+      </button>
+
+      <button onclick="askAIQuick('ما أهم الأشياء التي يجب أن أحفظها؟')">
+        ⭐ أهم الأشياء
+      </button>
+
+      <button onclick="askAIQuick('اختبرني في الدرس')">
+        📝 اختبرني
+      </button>
+
+      <button onclick="askAIQuick('اشرح لي أصعب نقطة في الدرس')">
+        🧠 أصعب نقطة
+      </button>
+
+    </div>
+
+    <div class="ai-input-area">
+
+      <textarea
+        class="ai-input"
+        id="aiInput"
+        placeholder="اكتب سؤالك هنا..."
+        onkeydown="handleAIKeydown(event)"
+      ></textarea>
+
+      <button
+        class="ai-send"
+        onclick="sendAIMessage()"
+      >
+        ➤
+      </button>
+
+    </div>
+
+  </div>
+
   <div
     class="toast"
     id="toast"
   ></div>
 
   <script>
-    /* =====================================================
-       Study AI
-       Frontend
-    ===================================================== */
-
     let selectedFiles = [];
     let studyData = null;
 
-    const $ = (id) => document.getElementById(id);
+    const $ = id => document.getElementById(id);
 
     /* =========================
        Toast
@@ -1977,7 +1981,7 @@
         block: "start"
       });
 
-      $("sidebar")?.classList.remove("open");
+      $("sidebar").classList.remove("open");
     }
 
     function toggleSidebar() {
@@ -2023,7 +2027,7 @@
     function updateGlow(value) {
       document.documentElement.style.setProperty(
         "--glow",
-        `${value}px`
+        value + "px"
       );
 
       $("glowValue").textContent = value;
@@ -2044,12 +2048,10 @@
     function setTheme(theme) {
       if (theme === "light") {
         document.body.classList.add("light");
-
         $("lightButton").classList.add("active");
         $("darkButton").classList.remove("active");
       } else {
         document.body.classList.remove("light");
-
         $("darkButton").classList.add("active");
         $("lightButton").classList.remove("active");
       }
@@ -2063,32 +2065,24 @@
     }
 
     function toggleTheme() {
-      const isLight =
-        document.body.classList.contains("light");
-
-      setTheme(isLight ? "dark" : "light");
+      setTheme(
+        document.body.classList.contains("light")
+          ? "dark"
+          : "light"
+      );
     }
 
     function saveAppearance() {
-      const appearance = {
-        primary:
-          $("primaryColor").value,
-
-        background:
-          $("backgroundColor").value,
-
-        glow:
-          $("glowRange").value,
-
-        theme:
-          document.body.classList.contains("light")
-            ? "light"
-            : "dark"
-      };
-
       localStorage.setItem(
         "studyAI_appearance",
-        JSON.stringify(appearance)
+        JSON.stringify({
+          primary: $("primaryColor").value,
+          background: $("backgroundColor").value,
+          glow: $("glowRange").value,
+          theme: document.body.classList.contains("light")
+            ? "light"
+            : "dark"
+        })
       );
     }
 
@@ -2108,27 +2102,17 @@
       if (!saved) return;
 
       if (saved.primary) {
-        $("primaryColor").value =
-          saved.primary;
-
-        updatePrimaryColor(
-          saved.primary
-        );
+        $("primaryColor").value = saved.primary;
+        updatePrimaryColor(saved.primary);
       }
 
       if (saved.background) {
-        $("backgroundColor").value =
-          saved.background;
-
-        updateBackgroundColor(
-          saved.background
-        );
+        $("backgroundColor").value = saved.background;
+        updateBackgroundColor(saved.background);
       }
 
       if (saved.glow) {
-        $("glowRange").value =
-          saved.glow;
-
+        $("glowRange").value = saved.glow;
         updateGlow(saved.glow);
       }
 
@@ -2140,14 +2124,9 @@
     }
 
     function resetAppearance() {
-      $("primaryColor").value =
-        "#168cff";
-
-      $("backgroundColor").value =
-        "#050b18";
-
-      $("glowRange").value =
-        "28";
+      $("primaryColor").value = "#168cff";
+      $("backgroundColor").value = "#050b18";
+      $("glowRange").value = "28";
 
       updatePrimaryColor("#168cff");
       updateBackgroundColor("#050b18");
@@ -2157,8 +2136,23 @@
       showToast("تمت إعادة المظهر الافتراضي ✨");
     }
 
+    $("primaryColor").addEventListener(
+      "input",
+      e => updatePrimaryColor(e.target.value)
+    );
+
+    $("backgroundColor").addEventListener(
+      "input",
+      e => updateBackgroundColor(e.target.value)
+    );
+
+    $("glowRange").addEventListener(
+      "input",
+      e => updateGlow(e.target.value)
+    );
+
     /* =========================
-       File Upload
+       Upload
     ========================== */
 
     const fileInput = $("fileInput");
@@ -2167,88 +2161,48 @@
 
     fileInput.addEventListener(
       "change",
-      (event) => {
-        addFiles(event.target.files);
-      }
+      e => addFiles(e.target.files)
     );
 
-    [
-      "dragenter",
-      "dragover"
-    ].forEach(eventName => {
-      uploadBox.addEventListener(
-        eventName,
-        (event) => {
-          event.preventDefault();
-
-          uploadBox.classList.add(
-            "dragover"
-          );
-        }
-      );
+    ["dragenter","dragover"].forEach(name => {
+      uploadBox.addEventListener(name,e => {
+        e.preventDefault();
+        uploadBox.classList.add("dragover");
+      });
     });
 
-    [
-      "dragleave",
-      "drop"
-    ].forEach(eventName => {
-      uploadBox.addEventListener(
-        eventName,
-        (event) => {
-          event.preventDefault();
-
-          uploadBox.classList.remove(
-            "dragover"
-          );
-        }
-      );
+    ["dragleave","drop"].forEach(name => {
+      uploadBox.addEventListener(name,e => {
+        e.preventDefault();
+        uploadBox.classList.remove("dragover");
+      });
     });
 
     uploadBox.addEventListener(
       "drop",
-      (event) => {
-        addFiles(
-          event.dataTransfer.files
-        );
-      }
+      e => addFiles(e.dataTransfer.files)
     );
 
     function addFiles(files) {
-      const incoming =
-        Array.from(files || []);
-
-      const images =
-        incoming.filter(file =>
-          file.type.startsWith("image/")
-        );
+      const images = Array.from(files || [])
+        .filter(file => file.type.startsWith("image/"));
 
       if (!images.length) {
-        showToast(
-          "اختر ملفات صور فقط 📸"
-        );
-
+        showToast("اختر ملفات صور فقط 📸");
         return;
       }
 
       for (const file of images) {
-        if (
-          selectedFiles.length >= 20
-        ) {
-          showToast(
-            "الحد الأقصى 20 صورة."
-          );
 
+        if (selectedFiles.length >= 20) {
+          showToast("الحد الأقصى 20 صورة.");
           break;
         }
 
-        if (
-          file.size >
-          10 * 1024 * 1024
-        ) {
+        if (file.size > 10 * 1024 * 1024) {
           showToast(
             `الصورة ${file.name} أكبر من 10MB`
           );
-
           continue;
         }
 
@@ -2261,95 +2215,65 @@
     function renderPreviews() {
       previewGrid.innerHTML = "";
 
-      selectedFiles.forEach(
-        (file, index) => {
-          const reader =
-            new FileReader();
+      selectedFiles.forEach((file,index) => {
 
-          reader.onload = () => {
-            const item =
-              document.createElement("div");
+        const reader = new FileReader();
 
-            item.className =
-              "preview-item";
+        reader.onload = () => {
 
-            item.innerHTML = `
-              <img
-                src="${reader.result}"
-                alt="صورة الدرس"
-              />
+          const item = document.createElement("div");
 
-              <button
-                class="remove-image"
-                type="button"
-                title="حذف الصورة"
-              >
-                ×
-              </button>
-            `;
+          item.className = "preview-item";
 
-            item
-              .querySelector(
-                ".remove-image"
-              )
-              .addEventListener(
-                "click",
-                () => {
-                  selectedFiles.splice(
-                    index,
-                    1
-                  );
+          item.innerHTML = `
+            <img src="${reader.result}" alt="صورة الدرس">
 
-                  renderPreviews();
-                }
-              );
+            <button
+              class="remove-image"
+              type="button"
+            >
+              ×
+            </button>
+          `;
 
-            previewGrid.appendChild(
-              item
-            );
-          };
+          item
+            .querySelector(".remove-image")
+            .addEventListener("click",() => {
+              selectedFiles.splice(index,1);
+              renderPreviews();
+            });
 
-          reader.readAsDataURL(file);
-        }
-      );
+          previewGrid.appendChild(item);
+        };
+
+        reader.readAsDataURL(file);
+      });
     }
 
     function clearImages() {
       selectedFiles = [];
-
       fileInput.value = "";
-
       previewGrid.innerHTML = "";
 
-      showToast(
-        "تم حذف الصور 🗑️"
-      );
+      showToast("تم حذف الصور 🗑️");
     }
 
     /* =========================
-       Analyze Lesson
+       Analyze
     ========================== */
 
     async function analyzeLesson() {
+
       if (!selectedFiles.length) {
-        showToast(
-          "ارفع صورة واحدة على الأقل أولاً 📸"
-        );
-
-        scrollToSection("analyzer");
-
+        showToast("ارفع صورة واحدة على الأقل أولاً 📸");
         return;
       }
 
-      const button =
-        $("analyzeButton");
-
-      const status =
-        $("status");
+      const button = $("analyzeButton");
+      const status = $("status");
 
       button.disabled = true;
-
-      button.style.opacity = "0.65";
+      button.style.opacity = ".65";
 
       status.style.display = "block";
 
@@ -2358,32 +2282,25 @@
         الذكاء الاصطناعي يحلل الدرس...
       `;
 
-      $("results").style.display =
-        "none";
+      $("results").style.display = "none";
 
       try {
-        const formData =
-          new FormData();
 
-        selectedFiles.forEach(
-          file => {
-            formData.append(
-              "images",
-              file
-            );
+        const formData = new FormData();
+
+        selectedFiles.forEach(file => {
+          formData.append("images",file);
+        });
+
+        const response = await fetch(
+          "/api/analyze",
+          {
+            method: "POST",
+            body: formData
           }
         );
 
-        const response =
-          await fetch(
-            "/api/analyze",
-            {
-              method: "POST",
-              body: formData
-            }
-          );
-
-        let data = null;
+        let data;
 
         try {
           data = await response.json();
@@ -2400,39 +2317,33 @@
           );
         }
 
-        studyData =
-          normalizeStudyData(data);
+        studyData = normalizeStudyData(data);
 
-        renderStudyData(
-          studyData
-        );
+        renderStudyData(studyData);
 
-        $("results").style.display =
-          "block";
+        $("results").style.display = "block";
+
+        updateLessonCount();
+
+        status.style.display = "none";
 
         $("results").scrollIntoView({
           behavior: "smooth",
           block: "start"
         });
 
-        updateLessonCount();
+        showToast("تم تحليل الدرس بنجاح 🎉");
 
-        status.style.display =
-          "none";
+      } catch(error) {
 
-        showToast(
-          "تم تحليل الدرس بنجاح 🎉"
-        );
-
-      } catch (error) {
         console.error(error);
 
-        status.innerHTML = `
-          ❌ ${escapeHtml(
+        status.innerHTML =
+          "❌ " +
+          escapeHtml(
             error.message ||
             "حدث خطأ غير متوقع."
-          )}
-        `;
+          );
 
         showToast(
           error.message ||
@@ -2440,18 +2351,18 @@
         );
 
       } finally {
-        button.disabled = false;
 
+        button.disabled = false;
         button.style.opacity = "1";
       }
     }
 
     /* =========================
-       Normalize Data
+       Data
     ========================== */
 
     function normalizeStudyData(data) {
-      const safeArray = value =>
+      const arr = value =>
         Array.isArray(value)
           ? value
           : [];
@@ -2468,37 +2379,24 @@
             : "",
 
         important_points:
-          safeArray(
-            data?.important_points
-          ),
+          arr(data?.important_points),
 
         key_terms:
-          safeArray(
-            data?.key_terms
-          ),
+          arr(data?.key_terms),
 
         definitions:
-          safeArray(
-            data?.definitions
-          ),
+          arr(data?.definitions),
 
         laws:
-          safeArray(
-            data?.laws
-          ),
+          arr(data?.laws),
 
         quiz:
-          safeArray(
-            data?.quiz
-          )
+          arr(data?.quiz)
       };
     }
 
-    /* =========================
-       Render Results
-    ========================== */
-
     function renderStudyData(data) {
+
       $("summaryContent").textContent =
         data.summary ||
         "لم يتم استخراج ملخص.";
@@ -2527,13 +2425,12 @@
         data.quiz
       );
 
-      $("scoreBox").style.display =
-        "none";
+      $("scoreBox").style.display = "none";
     }
 
     function renderImportantPoints(points) {
-      const container =
-        $("importantPoints");
+
+      const container = $("importantPoints");
 
       container.innerHTML = "";
 
@@ -2542,16 +2439,15 @@
           `<div class="list-item">
             لا توجد نقاط مهمة مستخرجة.
           </div>`;
-
         return;
       }
 
       points.forEach(point => {
+
         const item =
           document.createElement("div");
 
-        item.className =
-          "list-item";
+        item.className = "list-item";
 
         item.textContent =
           typeof point === "string"
@@ -2563,8 +2459,8 @@
     }
 
     function renderTerms(terms) {
-      const container =
-        $("keyTerms");
+
+      const container = $("keyTerms");
 
       container.innerHTML = "";
 
@@ -2573,11 +2469,11 @@
           `<span class="term">
             لا توجد مصطلحات
           </span>`;
-
         return;
       }
 
       terms.forEach(term => {
+
         const item =
           document.createElement("span");
 
@@ -2594,8 +2490,8 @@
     }
 
     function renderDefinitions(definitions) {
-      const container =
-        $("definitions");
+
+      const container = $("definitions");
 
       container.innerHTML = "";
 
@@ -2604,31 +2500,22 @@
           `<div class="definition">
             لا توجد تعاريف واضحة في الصور.
           </div>`;
-
         return;
       }
 
       definitions.forEach(def => {
+
         const item =
           document.createElement("div");
 
-        item.className =
-          "definition";
+        item.className = "definition";
 
         item.innerHTML = `
           <strong>
-            ${escapeHtml(
-              def?.term ||
-              "تعريف"
-            )}
+            ${escapeHtml(def?.term || "تعريف")}
           </strong>
 
-          <div>
-            ${escapeHtml(
-              def?.definition ||
-              ""
-            )}
-          </div>
+          ${escapeHtml(def?.definition || "")}
         `;
 
         container.appendChild(item);
@@ -2636,8 +2523,8 @@
     }
 
     function renderLaws(laws) {
-      const container =
-        $("laws");
+
+      const container = $("laws");
 
       container.innerHTML = "";
 
@@ -2646,43 +2533,32 @@
           `<div class="law">
             لا توجد قوانين أو معادلات واضحة في الصور.
           </div>`;
-
         return;
       }
 
       laws.forEach(law => {
+
         const item =
           document.createElement("div");
 
-        item.className =
-          "law";
+        item.className = "law";
 
         item.innerHTML = `
           <strong>
-            ${escapeHtml(
-              law?.title ||
-              "قانون"
-            )}
+            ${escapeHtml(law?.title || "قانون")}
           </strong>
 
           ${
             law?.formula
               ? `
                 <div class="formula">
-                  ${escapeHtml(
-                    law.formula
-                  )}
+                  ${escapeHtml(law.formula)}
                 </div>
               `
               : ""
           }
 
-          <div>
-            ${escapeHtml(
-              law?.explanation ||
-              ""
-            )}
-          </div>
+          ${escapeHtml(law?.explanation || "")}
         `;
 
         container.appendChild(item);
@@ -2694,119 +2570,98 @@
     ========================== */
 
     function renderQuiz(quiz) {
-      const container =
-        $("quiz");
+
+      const container = $("quiz");
 
       container.innerHTML = "";
 
       if (!quiz.length) {
-        container.innerHTML = `
-          <div class="quiz-question">
+        container.innerHTML =
+          `<div class="quiz-question">
             لم يتم إنشاء أسئلة.
-          </div>
-        `;
-
+          </div>`;
         return;
       }
 
-      quiz.forEach(
-        (question, index) => {
-          const item =
-            document.createElement("div");
+      quiz.forEach((question,index) => {
 
-          item.className =
-            "quiz-question";
+        const item =
+          document.createElement("div");
 
-          const type =
-            question?.type ||
-            "written";
+        item.className = "quiz-question";
 
-          let optionsHTML = "";
+        const type =
+          question?.type || "written";
 
-          if (
-            type === "choice" ||
-            type === "truefalse"
-          ) {
-            const options =
-              Array.isArray(
-                question?.options
-              )
-                ? question.options
-                : [];
+        let optionsHTML = "";
 
-            optionsHTML =
-              options
-                .map(
-                  (option, optionIndex) => `
-                    <label class="option">
-                      <input
-                        type="radio"
-                        name="question-${index}"
-                        value="${escapeAttr(
-                          option
-                        )}"
-                      />
+        if (
+          type === "choice" ||
+          type === "truefalse"
+        ) {
 
-                      <span>
-                        ${escapeHtml(
-                          option
-                        )}
-                      </span>
-                    </label>
-                  `
-                )
-                .join("");
-          } else {
-            optionsHTML = `
-              <textarea
-                class="written-answer"
-                id="written-${index}"
-                placeholder="اكتب إجابتك هنا..."
-              ></textarea>
-            `;
-          }
+          const options =
+            Array.isArray(question?.options)
+              ? question.options
+              : [];
 
-          item.innerHTML = `
-            <div class="quiz-number">
-              السؤال ${index + 1}
-            </div>
+          optionsHTML =
+            options.map(option => `
+              <label class="option">
 
-            <div class="question-text">
-              ${escapeHtml(
-                question?.question ||
-                ""
-              )}
-            </div>
+                <input
+                  type="radio"
+                  name="question-${index}"
+                  value="${escapeAttr(option)}"
+                >
 
-            ${optionsHTML}
+                <span>
+                  ${escapeHtml(option)}
+                </span>
 
-            <div
-              class="question-result"
-              id="question-result-${index}"
-            ></div>
+              </label>
+            `).join("");
+
+        } else {
+
+          optionsHTML = `
+            <textarea
+              class="written-answer"
+              id="written-${index}"
+              placeholder="اكتب إجابتك هنا..."
+            ></textarea>
           `;
-
-          container.appendChild(item);
         }
-      );
+
+        item.innerHTML = `
+          <div class="quiz-number">
+            السؤال ${index + 1}
+          </div>
+
+          <div class="question-text">
+            ${escapeHtml(question?.question || "")}
+          </div>
+
+          ${optionsHTML}
+
+          <div
+            class="question-result"
+            id="question-result-${index}"
+          ></div>
+        `;
+
+        container.appendChild(item);
+      });
     }
 
-    /* =========================
-       Grading
-    ========================== */
-
     function gradeQuiz() {
+
       if (
         !studyData ||
-        !Array.isArray(
-          studyData.quiz
-        ) ||
+        !studyData.quiz ||
         !studyData.quiz.length
       ) {
-        showToast(
-          "لا يوجد اختبار للتصحيح."
-        );
-
+        showToast("لا يوجد اختبار للتصحيح.");
         return;
       }
 
@@ -2816,10 +2671,10 @@
         studyData.quiz.length;
 
       studyData.quiz.forEach(
-        (question, index) => {
+        (question,index) => {
+
           const type =
-            question?.type ||
-            "written";
+            question?.type || "written";
 
           let userAnswer = "";
 
@@ -2827,35 +2682,34 @@
             type === "choice" ||
             type === "truefalse"
           ) {
+
             const selected =
               document.querySelector(
                 `input[name="question-${index}"]:checked`
               );
 
             userAnswer =
-              selected?.value ||
-              "";
+              selected?.value || "";
+
           } else {
+
             userAnswer =
-              $(
-                `written-${index}`
-              )?.value ||
-              "";
+              $(`written-${index}`)?.value || "";
           }
 
-          const result =
+          const isCorrect =
             checkAnswer(
               userAnswer,
               question
             );
 
-          if (result) {
+          if (isCorrect) {
             correct++;
           }
 
           showQuestionResult(
             index,
-            result,
+            isCorrect,
             question
           );
         }
@@ -2867,36 +2721,24 @@
         );
 
       $("scoreNumber").textContent =
-        `${percentage}%`;
+        percentage + "%";
 
       $("scoreText").textContent =
         `أجبت بشكل صحيح على ${correct} من ${total} سؤال`;
 
-      $("scoreBox").style.display =
-        "block";
+      $("scoreBox").style.display = "block";
 
-      updateTestStats(
-        percentage
-      );
+      updateTestStats(percentage);
 
       showToast(
         `نتيجتك ${percentage}% 🎉`
       );
-
-      $("scoreBox").scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
     }
 
-    function checkAnswer(
-      userAnswer,
-      question
-    ) {
+    function checkAnswer(userAnswer,question) {
+
       const user =
-        normalizeArabic(
-          userAnswer
-        );
+        normalizeArabic(userAnswer);
 
       if (!user) return false;
 
@@ -2916,7 +2758,6 @@
       }
 
       return accepted.some(answer => {
-        if (!answer) return false;
 
         if (answer === user) {
           return true;
@@ -2941,123 +2782,84 @@
       correct,
       question
     ) {
+
       const result =
-        $(
-          `question-result-${index}`
-        );
+        $(`question-result-${index}`);
 
       if (!result) return;
 
       result.className =
-        `question-result ${
-          correct
-            ? "correct"
-            : "wrong"
-        }`;
+        "question-result " +
+        (correct ? "correct" : "wrong");
 
       if (correct) {
+
         result.textContent =
           "✅ إجابة صحيحة";
+
       } else {
-        result.innerHTML =
-          `
-            ❌ إجابة غير صحيحة
-            <br>
-            <strong>
-              الإجابة:
-            </strong>
-            ${escapeHtml(
-              question?.answer ||
-              "غير متوفرة"
-            )}
-          `;
+
+        result.innerHTML = `
+          ❌ إجابة غير صحيحة
+          <br>
+          <strong>الإجابة:</strong>
+          ${escapeHtml(
+            question?.answer ||
+            "غير متوفرة"
+          )}
+        `;
       }
     }
 
     function revealAnswers() {
+
       if (
         !studyData ||
-        !Array.isArray(
-          studyData.quiz
-        )
+        !studyData.quiz
       ) {
-        showToast(
-          "حلل درسًا أولًا."
-        );
-
+        showToast("حلل درسًا أولًا.");
         return;
       }
 
       studyData.quiz.forEach(
-        (question, index) => {
+        (question,index) => {
+
           const result =
-            $(
-              `question-result-${index}`
-            );
+            $(`question-result-${index}`);
 
           if (!result) return;
 
           result.className =
             "question-result correct";
 
-          result.innerHTML =
-            `
-              💡 الإجابة الصحيحة:
-              <strong>
-                ${escapeHtml(
-                  question?.answer ||
-                  "غير متوفرة"
-                )}
-              </strong>
-            `;
+          result.innerHTML = `
+            💡 الإجابة الصحيحة:
+            <strong>
+              ${escapeHtml(
+                question?.answer ||
+                "غير متوفرة"
+              )}
+            </strong>
+          `;
         }
       );
 
-      showToast(
-        "تم إظهار الإجابات 👁️"
-      );
+      showToast("تم إظهار الإجابات 👁️");
     }
 
-    /* =========================
-       Arabic Normalization
-    ========================== */
-
     function normalizeArabic(text) {
+
       return String(text || "")
         .toLowerCase()
         .trim()
-        .replace(
-          /[ًٌٍَُِّْـ]/g,
-          ""
-        )
-        .replace(
-          /[إأآ]/g,
-          "ا"
-        )
-        .replace(
-          /ى/g,
-          "ي"
-        )
-        .replace(
-          /ة/g,
-          "ه"
-        )
-        .replace(
-          /ؤ/g,
-          "و"
-        )
-        .replace(
-          /ئ/g,
-          "ي"
-        )
-        .replace(
-          /[.,!?،؛:()[\]{}"']/g,
-          " "
-        )
-        .replace(
-          /\s+/g,
-          " "
-        );
+        .replace(/[ًٌٍَُِّْـ]/g,"")
+        .replace(/[إأآ]/g,"ا")
+        .replace(/ى/g,"ي")
+        .replace(/ة/g,"ه")
+        .replace(/ؤ/g,"و")
+        .replace(/ئ/g,"ي")
+        .replace(/[.,!?،؛:()[\]{}"']/g," ")
+        .replace(/\s+/g," ");
     }
 
     /* =========================
@@ -3065,6 +2867,7 @@
     ========================== */
 
     function updateLessonCount() {
+
       const current =
         Number(
           localStorage.getItem(
@@ -3072,8 +2875,7 @@
           ) || 0
         );
 
-      const next =
-        current + 1;
+      const next = current + 1;
 
       localStorage.setItem(
         "studyAI_lessons",
@@ -3084,9 +2886,8 @@
         next;
     }
 
-    function updateTestStats(
-      percentage
-    ) {
+    function updateTestStats(percentage) {
+
       const count =
         Number(
           localStorage.getItem(
@@ -3109,11 +2910,10 @@
           ) || 0
         );
 
-      const newAverage =
+      const average =
         count === 0
           ? percentage
-          :
-            Math.round(
+          : Math.round(
               (
                 previous * count +
                 percentage
@@ -3123,14 +2923,15 @@
 
       localStorage.setItem(
         "studyAI_accuracy",
-        newAverage
+        average
       );
 
       $("accuracyStat").textContent =
-        `${newAverage}%`;
+        average + "%";
     }
 
     function loadStats() {
+
       $("lessonsCount").textContent =
         Number(
           localStorage.getItem(
@@ -3146,13 +2947,11 @@
         );
 
       $("accuracyStat").textContent =
-        `${
-          Number(
-            localStorage.getItem(
-              "studyAI_accuracy"
-            ) || 0
-          )
-        }%`;
+        Number(
+          localStorage.getItem(
+            "studyAI_accuracy"
+          ) || 0
+        ) + "%";
     }
 
     /* =========================
@@ -3160,78 +2959,210 @@
     ========================== */
 
     function handleSearch() {
+
       const value =
         $("searchInput").value
           .trim()
           .toLowerCase();
 
-      if (!value) {
-        document
-          .querySelectorAll(
-            ".result-card, .tool-card"
-          )
-          .forEach(
-            el =>
-              el.style.display = ""
-          );
-
-        return;
-      }
-
       document
         .querySelectorAll(
-          ".result-card, .tool-card"
+          ".result-card,.tool-card"
         )
         .forEach(el => {
-          const text =
-            el.textContent
-              .toLowerCase();
+
+          if (!value) {
+            el.style.display = "";
+            return;
+          }
 
           el.style.display =
-            text.includes(value)
+            el.textContent
+              .toLowerCase()
+              .includes(value)
               ? ""
               : "none";
         });
     }
 
     /* =========================
-       Escape HTML
+       AI Assistant
+    ========================== */
+
+    function openAIAssistant() {
+
+      const panel =
+        $("aiAssistantPanel");
+
+      panel.classList.add("open");
+
+      setTimeout(() => {
+        $("aiInput")?.focus();
+      },100);
+
+      $("sidebar").classList.remove("open");
+    }
+
+    function toggleAIAssistant() {
+
+      const panel =
+        $("aiAssistantPanel");
+
+      panel.classList.toggle("open");
+
+      if (panel.classList.contains("open")) {
+        setTimeout(() => {
+          $("aiInput")?.focus();
+        },100);
+      }
+    }
+
+    function handleAIKeydown(event) {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+        sendAIMessage();
+      }
+    }
+
+    function askAIQuick(message) {
+
+      $("aiInput").value = message;
+
+      sendAIMessage();
+    }
+
+    function addAIMessage(
+      message,
+      type
+    ) {
+
+      const container =
+        $("aiMessages");
+
+      const div =
+        document.createElement("div");
+
+      div.className =
+        `ai-message ${type}`;
+
+      div.textContent = message;
+
+      container.appendChild(div);
+
+      container.scrollTop =
+        container.scrollHeight;
+    }
+
+    async function sendAIMessage() {
+
+      const input = $("aiInput");
+
+      const message =
+        input.value.trim();
+
+      if (!message) return;
+
+      input.value = "";
+
+      addAIMessage(
+        message,
+        "user"
+      );
+
+      $("aiTyping")
+        .classList
+        .add("show");
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/chat",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                message: message,
+                lesson: studyData
+              })
+            }
+          );
+
+        let data;
+
+        try {
+          data =
+            await response.json();
+        } catch {
+          throw new Error(
+            "استجابة غير صالحة من السيرفر."
+          );
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error ||
+            "حدث خطأ في المساعد."
+          );
+        }
+
+        addAIMessage(
+          data?.answer ||
+          "ما قدرت أطلع إجابة الآن.",
+          "bot"
+        );
+
+      } catch(error) {
+
+        console.error(error);
+
+        addAIMessage(
+          "❌ " +
+          (
+            error.message ||
+            "حدث خطأ أثناء الاتصال بالمساعد."
+          ),
+          "bot"
+        );
+
+      } finally {
+
+        $("aiTyping")
+          .classList
+          .remove("show");
+      }
+    }
+
+    /* =========================
+       Escape
     ========================== */
 
     function escapeHtml(value) {
+
       return String(value ?? "")
-        .replace(
-          /&/g,
-          "&amp;"
-        )
-        .replace(
-          /</g,
-          "&lt;"
-        )
-        .replace(
-          />/g,
-          "&gt;"
-        )
-        .replace(
-          /"/g,
-          "&quot;"
-        )
-        .replace(
-          /'/g,
-          "&#039;"
-        );
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
     }
 
     function escapeAttr(value) {
       return escapeHtml(value)
-        .replace(
-          /`/g,
-          "&#096;"
-        );
+        .replace(/`/g,"&#096;");
     }
 
     /* =========================
-       Initialize
+       Start
     ========================== */
 
     document.addEventListener(
@@ -3241,7 +3172,6 @@
         loadStats();
       }
     );
-
   </script>
 
 </body>
