@@ -1,3178 +1,2646 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Study AI</title>
-
-  <style>
-    :root {
-      --bg: #050b18;
-      --bg2: #081329;
-      --card: rgba(8, 20, 42, .82);
-      --card2: rgba(13, 29, 57, .92);
-      --primary: #168cff;
-      --primary2: #7c4dff;
-      --text: #f7f9ff;
-      --muted: #9caaca;
-      --border: rgba(120,170,255,.18);
-      --success: #21d19f;
-      --danger: #ff5577;
-      --warning: #ffb52e;
-      --glow: 28px;
-      --radius: 22px;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      min-height: 100vh;
-      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at 85% 10%, rgba(22,140,255,.16), transparent 30%),
-        radial-gradient(circle at 10% 80%, rgba(124,77,255,.12), transparent 30%),
-        linear-gradient(135deg,var(--bg),var(--bg2));
-      transition: .3s;
-      overflow-x: hidden;
-    }
-
-    body.light {
-      --text: #172033;
-      --muted: #667085;
-      --card: rgba(255,255,255,.88);
-      --card2: rgba(255,255,255,.96);
-      --border: rgba(30,50,90,.12);
-      background:
-        radial-gradient(circle at 85% 10%, rgba(22,140,255,.12), transparent 30%),
-        linear-gradient(135deg,#eef5ff,#f8fbff);
-    }
-
-    button,
-    input,
-    textarea {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    ::selection {
-      background: var(--primary);
-      color: white;
-    }
-
-    /* ===== Sidebar ===== */
-
-    .sidebar {
-      width: 270px;
-      min-height: 100vh;
-      position: fixed;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      padding: 22px 18px;
-      border-left: 1px solid var(--border);
-      background: rgba(3,10,24,.76);
-      backdrop-filter: blur(24px);
-      z-index: 50;
-      display: flex;
-      flex-direction: column;
-      transition: transform .3s;
-    }
-
-    body.light .sidebar {
-      background: rgba(255,255,255,.82);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 5px 8px 25px;
-    }
-
-    .brand-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 15px;
-      display: grid;
-      place-items: center;
-      font-size: 25px;
-      background: linear-gradient(135deg,var(--primary),var(--primary2));
-      box-shadow: 0 0 var(--glow) rgba(22,140,255,.3);
-    }
-
-    .brand h1 {
-      font-size: 22px;
-      font-weight: 900;
-      background: linear-gradient(90deg,var(--primary),#b184ff);
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    .brand p {
-      color: var(--muted);
-      font-size: 11px;
-      margin-top: 3px;
-    }
-
-    .nav {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    .nav button {
-      border: 1px solid transparent;
-      color: var(--muted);
-      background: transparent;
-      border-radius: 14px;
-      padding: 13px 14px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-align: right;
-      transition: .25s;
-    }
-
-    .nav button:hover,
-    .nav button.active {
-      color: white;
-      background: rgba(22,140,255,.13);
-      border-color: rgba(22,140,255,.25);
-      transform: translateX(-3px);
-    }
-
-    body.light .nav button:hover,
-    body.light .nav button.active {
-      color: var(--text);
-    }
-
-    .nav-icon {
-      width: 26px;
-      text-align: center;
-      font-size: 19px;
-    }
-
-    .sidebar-bottom {
-      margin-top: auto;
-    }
-
-    .sidebar-tip {
-      border: 1px solid var(--border);
-      background: rgba(22,140,255,.07);
-      padding: 16px;
-      border-radius: 18px;
-      margin-bottom: 10px;
-    }
-
-    .sidebar-tip strong {
-      display: block;
-      margin-bottom: 7px;
-    }
-
-    .sidebar-tip span {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.7;
-    }
-
-    /* ===== Main ===== */
-
-    .main {
-      width: calc(100% - 270px);
-      margin-right: 270px;
-      padding: 25px;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      margin-bottom: 22px;
-    }
-
-    .search {
-      flex: 1;
-      max-width: 620px;
-      position: relative;
-    }
-
-    .search input {
-      width: 100%;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      border-radius: 17px;
-      padding: 14px 48px 14px 18px;
-      outline: none;
-    }
-
-    .search span {
-      position: absolute;
-      right: 17px;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-
-    .top-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .icon-button {
-      width: 45px;
-      height: 45px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      display: grid;
-      place-items: center;
-      transition: .25s;
-    }
-
-    .icon-button:hover {
-      transform: translateY(-2px);
-      border-color: var(--primary);
-    }
-
-    .profile {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 6px 9px;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      background: var(--card);
-    }
-
-    .avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg,var(--primary),var(--primary2));
-      font-weight: 900;
-    }
-
-    .profile small {
-      color: var(--muted);
-    }
-
-    /* ===== Hero ===== */
-
-    .hero {
-      min-height: 265px;
-      position: relative;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      border-radius: 28px;
-      padding: 35px;
-      background:
-        radial-gradient(circle at 80% 50%,rgba(22,140,255,.2),transparent 35%),
-        linear-gradient(135deg,rgba(22,140,255,.09),var(--card));
-      box-shadow: 0 0 var(--glow) rgba(22,140,255,.1);
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 2;
-      max-width: 650px;
-    }
-
-    .hero h2 {
-      font-size: clamp(27px,4vw,43px);
-      line-height: 1.25;
-      margin-bottom: 12px;
-    }
-
-    .gradient-text {
-      background: linear-gradient(90deg,var(--primary),#9a68ff,#e46cff);
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    .hero p {
-      color: var(--muted);
-      line-height: 1.9;
-      margin-bottom: 22px;
-    }
-
-    .hero-ai {
-      position: absolute;
-      left: 6%;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 130px;
-      opacity: .14;
-    }
-
-    /* ===== Buttons ===== */
-
-    .primary-button {
-      border: 0;
-      color: white;
-      padding: 13px 21px;
-      border-radius: 14px;
-      font-weight: 800;
-      background: linear-gradient(135deg,var(--primary),var(--primary2));
-      box-shadow: 0 8px 25px rgba(22,140,255,.25);
-      transition: .25s;
-    }
-
-    .primary-button:hover {
-      transform: translateY(-2px);
-    }
-
-    .secondary-button {
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 12px 18px;
-      border-radius: 14px;
-      background: var(--card);
-      transition: .25s;
-    }
-
-    .secondary-button:hover {
-      border-color: var(--primary);
-    }
-
-    /* ===== Cards ===== */
-
-    .quick-grid {
-      display: grid;
-      grid-template-columns: repeat(4,1fr);
-      gap: 14px;
-      margin-top: 18px;
-    }
-
-    .stat-card,
-    .tool-card,
-    .result-card {
-      border: 1px solid var(--border);
-      background: var(--card);
-      backdrop-filter: blur(20px);
-      border-radius: var(--radius);
-    }
-
-    .stat-card {
-      padding: 18px;
-      transition: .25s;
-    }
-
-    .stat-card:hover,
-    .tool-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(22,140,255,.35);
-    }
-
-    .stat-icon {
-      width: 43px;
-      height: 43px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      margin-bottom: 12px;
-      background: rgba(22,140,255,.12);
-    }
-
-    .stat-number {
-      font-size: 25px;
-      font-weight: 900;
-      margin-bottom: 5px;
-    }
-
-    .stat-label {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .tools {
-      margin-top: 18px;
-    }
-
-    .section-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 13px;
-    }
-
-    .section-title h3 {
-      font-size: 18px;
-    }
-
-    .section-title span {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .tools-grid {
-      display: grid;
-      grid-template-columns: repeat(4,1fr);
-      gap: 14px;
-    }
-
-    .tool-card {
-      padding: 18px;
-      min-height: 170px;
-      transition: .25s;
-    }
-
-    .tool-card .tool-icon {
-      font-size: 28px;
-      margin-bottom: 13px;
-    }
-
-    .tool-card h4 {
-      margin-bottom: 7px;
-    }
-
-    .tool-card p {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.7;
-      min-height: 42px;
-      margin-bottom: 13px;
-    }
-
-    /* ===== Upload ===== */
-
-    .upload-section {
-      margin-top: 18px;
-    }
-
-    .upload-box {
-      border: 1.5px dashed rgba(22,140,255,.45);
-      background: linear-gradient(145deg,rgba(22,140,255,.07),var(--card));
-      border-radius: 24px;
-      padding: 32px;
-      text-align: center;
-      transition: .25s;
-    }
-
-    .upload-box.dragover {
-      border-color: var(--primary);
-      transform: scale(1.01);
-      box-shadow: 0 0 30px rgba(22,140,255,.2);
-    }
-
-    .upload-icon {
-      width: 70px;
-      height: 70px;
-      border-radius: 22px;
-      display: grid;
-      place-items: center;
-      margin: 0 auto 14px;
-      font-size: 32px;
-      background: rgba(22,140,255,.12);
-    }
-
-    .upload-box h3 {
-      margin-bottom: 8px;
-    }
-
-    .upload-box p {
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 17px;
-    }
-
-    #fileInput {
-      display: none;
-    }
-
-    .preview-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
-      gap: 12px;
-      margin-top: 15px;
-    }
-
-    .preview-item {
-      position: relative;
-      overflow: hidden;
-      border-radius: 17px;
-      border: 1px solid var(--border);
-      background: var(--card2);
-      aspect-ratio: 1/.72;
-    }
-
-    .preview-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .remove-image {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      width: 31px;
-      height: 31px;
-      border: 0;
-      border-radius: 10px;
-      background: rgba(0,0,0,.7);
-      color: white;
-      font-size: 16px;
-    }
-
-    .status {
-      display: none;
-      margin-top: 14px;
-      padding: 14px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--muted);
-      text-align: center;
-    }
-
-    .spinner {
-      width: 22px;
-      height: 22px;
-      display: inline-block;
-      border: 3px solid rgba(22,140,255,.18);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin .8s linear infinite;
-      vertical-align: middle;
-      margin-left: 7px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* ===== Results ===== */
-
-    #results {
-      display: none;
-      margin-top: 22px;
-    }
-
-    .results-header {
-      padding: 22px;
-      border-radius: 22px;
-      border: 1px solid var(--border);
-      background: linear-gradient(135deg,rgba(22,140,255,.12),var(--card));
-      margin-bottom: 15px;
-    }
-
-    .results-header h2 {
-      margin-bottom: 7px;
-    }
-
-    .results-header p {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .result-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-    }
-
-    .result-card {
-      padding: 20px;
-    }
-
-    .result-card.full {
-      grid-column: 1/-1;
-    }
-
-    .result-card h3 {
-      margin-bottom: 14px;
-    }
-
-    .result-content {
-      color: var(--muted);
-      line-height: 1.95;
-      white-space: pre-wrap;
-    }
-
-    .list {
-      display: flex;
-      flex-direction: column;
-      gap: 9px;
-    }
-
-    .list-item {
-      padding: 12px 14px;
-      border-radius: 13px;
-      background: rgba(22,140,255,.06);
-      border: 1px solid var(--border);
-      line-height: 1.7;
-    }
-
-    .terms {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 9px;
-    }
-
-    .term {
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(22,140,255,.12);
-      border: 1px solid rgba(22,140,255,.2);
-      font-size: 13px;
-    }
-
-    .definition,
-    .law {
-      padding: 15px;
-      border-radius: 15px;
-      background: var(--card2);
-      border: 1px solid var(--border);
-      margin-bottom: 10px;
-      line-height: 1.8;
-    }
-
-    .definition strong,
-    .law strong {
-      display: block;
-      margin-bottom: 7px;
-    }
-
-    .formula {
-      padding: 13px;
-      margin: 10px 0;
-      border-radius: 12px;
-      background: rgba(22,140,255,.09);
-      direction: ltr;
-      text-align: center;
-      font-weight: 800;
-    }
-
-    /* ===== Quiz ===== */
-
-    .quiz-question {
-      padding: 19px;
-      border-radius: 17px;
-      border: 1px solid var(--border);
-      background: var(--card2);
-      margin-bottom: 13px;
-    }
-
-    .quiz-number {
-      color: var(--primary);
-      font-weight: 900;
-      margin-bottom: 7px;
-    }
-
-    .question-text {
-      font-weight: 800;
-      line-height: 1.8;
-      margin-bottom: 13px;
-    }
-
-    .option {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 11px 13px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      margin-top: 8px;
-      cursor: pointer;
-      transition: .2s;
-    }
-
-    .option:hover {
-      border-color: var(--primary);
-      background: rgba(22,140,255,.07);
-    }
-
-    .option input {
-      accent-color: var(--primary);
-    }
-
-    .written-answer {
-      width: 100%;
-      min-height: 90px;
-      resize: vertical;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      border-radius: 13px;
-      padding: 12px;
-      outline: none;
-      margin-top: 10px;
-    }
-
-    .quiz-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 15px;
-    }
-
-    .question-result {
-      display: none;
-      margin-top: 11px;
-      padding: 10px 12px;
-      border-radius: 11px;
-      font-size: 13px;
-    }
-
-    .question-result.correct {
-      display: block;
-      background: rgba(33,209,159,.12);
-      color: var(--success);
-    }
-
-    .question-result.wrong {
-      display: block;
-      background: rgba(255,85,119,.12);
-      color: var(--danger);
-    }
-
-    .score-box {
-      display: none;
-      padding: 20px;
-      border-radius: 18px;
-      margin-bottom: 16px;
-      border: 1px solid var(--border);
-      text-align: center;
-      background: linear-gradient(135deg,rgba(22,140,255,.12),var(--card));
-    }
-
-    .score-number {
-      font-size: 42px;
-      font-weight: 1000;
-      background: linear-gradient(90deg,var(--primary),var(--primary2));
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    /* ===== Appearance ===== */
-
-    .appearance-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.45);
-      backdrop-filter: blur(4px);
-      z-index: 90;
-      display: none;
-    }
-
-    .appearance-overlay.open {
-      display: block;
-    }
-
-    .appearance-panel {
-      position: fixed;
-      left: 20px;
-      top: 20px;
-      bottom: 20px;
-      width: 330px;
-      border-radius: 25px;
-      border: 1px solid var(--border);
-      background: rgba(5,13,29,.96);
-      backdrop-filter: blur(25px);
-      z-index: 100;
-      padding: 20px;
-      transform: translateX(-370px);
-      transition: .3s;
-      overflow-y: auto;
-    }
-
-    body.light .appearance-panel {
-      background: rgba(255,255,255,.96);
-    }
-
-    .appearance-panel.open {
-      transform: translateX(0);
-    }
-
-    .appearance-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 22px;
-    }
-
-    .close-panel {
-      width: 38px;
-      height: 38px;
-      border: 1px solid var(--border);
-      border-radius: 11px;
-      background: var(--card);
-      color: var(--text);
-    }
-
-    .setting-group {
-      margin-bottom: 22px;
-    }
-
-    .setting-group > label {
-      display: block;
-      margin-bottom: 10px;
-      font-weight: 800;
-      font-size: 13px;
-    }
-
-    .color-control {
-      display: flex;
-      gap: 9px;
-      align-items: center;
-    }
-
-    .color-control input[type=color] {
-      width: 52px;
-      height: 42px;
-      border: 0;
-      padding: 0;
-      border-radius: 12px;
-      background: transparent;
-    }
-
-    .color-value {
-      flex: 1;
-      padding: 11px;
-      border-radius: 11px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--muted);
-      direction: ltr;
-      text-align: center;
-    }
-
-    .presets {
-      display: grid;
-      grid-template-columns: repeat(3,1fr);
-      gap: 9px;
-    }
-
-    .preset {
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 10px 7px;
-      font-size: 11px;
-    }
-
-    .preset-color {
-      width: 25px;
-      height: 25px;
-      border-radius: 50%;
-      margin: 0 auto 6px;
-    }
-
-    .range {
-      width: 100%;
-      accent-color: var(--primary);
-    }
-
-    .theme-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 9px;
-    }
-
-    .theme-button {
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-    }
-
-    .theme-button.active {
-      border-color: var(--primary);
-    }
-
-    .reset-button {
-      width: 100%;
-    }
-
-    /* ===== AI Assistant ===== */
-
-    .ai-assistant-button {
-      position: fixed;
-      left: 25px;
-      bottom: 25px;
-      width: 62px;
-      height: 62px;
-      border: 0;
-      border-radius: 20px;
-      color: white;
-      font-size: 28px;
-      cursor: pointer;
-      z-index: 150;
-      background: linear-gradient(135deg,var(--primary),var(--primary2));
-      box-shadow: 0 10px 35px rgba(22,140,255,.35);
-      transition: .25s;
-    }
-
-    .ai-assistant-button:hover {
-      transform: translateY(-5px) scale(1.04);
-    }
-
-    .ai-assistant-panel {
-      position: fixed;
-      left: 25px;
-      bottom: 100px;
-      width: 390px;
-      max-width: calc(100vw - 30px);
-      height: 590px;
-      max-height: calc(100vh - 130px);
-      background: rgba(6,14,30,.97);
-      border: 1px solid var(--border);
-      border-radius: 25px;
-      backdrop-filter: blur(25px);
-      box-shadow: 0 25px 70px rgba(0,0,0,.35);
-      z-index: 149;
-      display: none;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    body.light .ai-assistant-panel {
-      background: rgba(255,255,255,.97);
-    }
-
-    .ai-assistant-panel.open {
-      display: flex;
-      animation: assistantOpen .25s ease;
-    }
-
-    @keyframes assistantOpen {
-      from {
-        opacity: 0;
-        transform: translateY(15px) scale(.97);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    .ai-assistant-header {
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(22,140,255,.08);
-    }
-
-    .ai-assistant-title {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-    }
-
-    .ai-assistant-avatar {
-      width: 43px;
-      height: 43px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      font-size: 23px;
-      background: linear-gradient(135deg,var(--primary),var(--primary2));
-    }
-
-    .ai-assistant-title strong {
-      display: block;
-    }
-
-    .ai-assistant-title small {
-      color: var(--success);
-      font-size: 11px;
-    }
-
-    .ai-close {
-      width: 37px;
-      height: 37px;
-      border-radius: 11px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-    }
-
-    .ai-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 11px;
-    }
-
-    .ai-message {
-      max-width: 88%;
-      padding: 11px 13px;
-      border-radius: 15px;
-      line-height: 1.8;
-      font-size: 13px;
-      white-space: pre-wrap;
-    }
-
-    .ai-message.bot {
-      align-self: flex-start;
-      background: var(--card2);
-      border: 1px solid var(--border);
-      border-top-left-radius: 5px;
-    }
-
-    .ai-message.user {
-      align-self: flex-end;
-      color: white;
-      background: linear-gradient(135deg,var(--primary),var(--primary2));
-      border-top-right-radius: 5px;
-    }
-
-    .ai-quick-actions {
-      padding: 8px 12px;
-      display: flex;
-      gap: 7px;
-      overflow-x: auto;
-      border-top: 1px solid var(--border);
-    }
-
-    .ai-quick-actions button {
-      flex: 0 0 auto;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 7px 11px;
-      font-size: 11px;
-    }
-
-    .ai-input-area {
-      padding: 12px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 8px;
-    }
-
-    .ai-input {
-      flex: 1;
-      min-width: 0;
-      resize: none;
-      height: 45px;
-      max-height: 120px;
-      border: 1px solid var(--border);
-      border-radius: 13px;
-      background: var(--card);
-      color: var(--text);
-      outline: none;
-      padding: 11px;
-    }
-
-    .ai-send {
-      width: 45px;
-      height: 45px;
-      flex-shrink: 0;
-      border: 0;
-      border-radius: 13px;
-      color: white;
-      background: linear-gradient(135deg,var(--primary),var(--primary2));
-      font-size: 18px;
-    }
-
-    .ai-typing {
-      display: none;
-      color: var(--muted);
-      font-size: 12px;
-      padding: 5px 15px;
-    }
-
-    .ai-typing.show {
-      display: block;
-    }
-
-    /* ===== Toast ===== */
-
-    .toast {
-      position: fixed;
-      bottom: 22px;
-      left: 22px;
-      max-width: 350px;
-      padding: 14px 17px;
-      border-radius: 14px;
-      background: #101a2d;
-      color: white;
-      border: 1px solid var(--border);
-      transform: translateY(120px);
-      opacity: 0;
-      transition: .3s;
-      z-index: 200;
-    }
-
-    .toast.show {
-      transform: translateY(0);
-      opacity: 1;
-    }
-
-    .mobile-menu {
-      display: none;
-    }
-
-    @media(max-width:1150px) {
-      .quick-grid,
-      .tools-grid {
-        grid-template-columns: repeat(2,1fr);
-      }
-    }
-
-    @media(max-width:850px) {
-      .sidebar {
-        transform: translateX(100%);
-      }
-
-      .sidebar.open {
-        transform: translateX(0);
-      }
-
-      .main {
-        width: 100%;
-        margin-right: 0;
-        padding: 15px;
-      }
-
-      .mobile-menu {
-        display: grid;
-      }
-
-      .topbar {
-        flex-wrap: wrap;
-      }
-
-      .search {
-        order: 3;
-        flex-basis: 100%;
-        max-width: none;
-      }
-
-      .hero-ai {
-        display: none;
-      }
-    }
-
-    @media(max-width:650px) {
-      .quick-grid,
-      .tools-grid,
-      .result-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .result-card.full {
-        grid-column: auto;
-      }
-
-      .profile-info {
-        display: none;
-      }
-
-      .appearance-panel {
-        width: calc(100% - 30px);
-        left: 15px;
-      }
-
-      .ai-assistant-panel {
-        left: 15px;
-        bottom: 90px;
-        width: calc(100vw - 30px);
-      }
-
-      .ai-assistant-button {
-        left: 15px;
-        bottom: 15px;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study AI</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  font-family:Tahoma,Arial,sans-serif;
+}
+
+body{
+  background:#090d18;
+  color:#fff;
+  min-height:100vh;
+}
+
+button,input,select,textarea{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+  border:none;
+}
+
+.app{
+  display:flex;
+  min-height:100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+  width:250px;
+  background:#0e1424;
+  border-left:1px solid #202a42;
+  padding:20px 15px;
+  position:fixed;
+  right:0;
+  top:0;
+  bottom:0;
+  z-index:20;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px;
+  margin-bottom:25px;
+}
+
+.logo-icon{
+  width:45px;
+  height:45px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg,#6c5ce7,#00cec9);
+  font-size:23px;
+}
+
+.logo h1{
+  font-size:21px;
+}
+
+.logo span{
+  color:#8e9ab5;
+  font-size:11px;
+}
+
+.nav{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.nav button{
+  background:transparent;
+  color:#9da9c4;
+  padding:13px 15px;
+  border-radius:12px;
+  text-align:right;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  transition:.2s;
+}
+
+.nav button:hover,
+.nav button.active{
+  background:#1b2540;
+  color:white;
+}
+
+.nav-icon{
+  width:28px;
+  text-align:center;
+  font-size:18px;
+}
+
+/* MAIN */
+
+.main{
+  margin-right:250px;
+  width:calc(100% - 250px);
+  padding:25px;
+}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:25px;
+}
+
+.page-title h2{
+  font-size:28px;
+}
+
+.page-title p{
+  color:#8995b0;
+  margin-top:6px;
+}
+
+.user-box{
+  background:#11192c;
+  border:1px solid #222d48;
+  border-radius:14px;
+  padding:10px 15px;
+  color:#b8c2d8;
+}
+
+/* PAGES */
+
+.page{
+  display:none;
+}
+
+.page.active{
+  display:block;
+}
+
+/* CARDS */
+
+.card{
+  background:#10182a;
+  border:1px solid #202b46;
+  border-radius:18px;
+  padding:20px;
+}
+
+.grid{
+  display:grid;
+  gap:16px;
+}
+
+.grid-2{
+  grid-template-columns:repeat(2,1fr);
+}
+
+.grid-3{
+  grid-template-columns:repeat(3,1fr);
+}
+
+.grid-4{
+  grid-template-columns:repeat(4,1fr);
+}
+
+.section-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:25px 0 15px;
+}
+
+.section-title h3{
+  font-size:20px;
+}
+
+.muted{
+  color:#8d99b2;
+}
+
+/* BUTTONS */
+
+.btn{
+  padding:11px 17px;
+  border-radius:11px;
+  color:#fff;
+  background:#252f4b;
+  transition:.2s;
+}
+
+.btn:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.15);
+}
+
+.btn-primary{
+  background:linear-gradient(135deg,#6c5ce7,#4834d4);
+}
+
+.btn-green{
+  background:linear-gradient(135deg,#00b894,#008f72);
+}
+
+.btn-red{
+  background:linear-gradient(135deg,#e74c3c,#c0392b);
+}
+
+.btn-small{
+  padding:7px 11px;
+  font-size:12px;
+}
+
+/* HOME */
+
+.hero{
+  background:
+    radial-gradient(circle at 15% 20%,rgba(108,92,231,.25),transparent 35%),
+    radial-gradient(circle at 90% 80%,rgba(0,206,201,.12),transparent 35%),
+    #111a2d;
+  border:1px solid #273454;
+  border-radius:22px;
+  padding:28px;
+  margin-bottom:20px;
+}
+
+.hero h2{
+  font-size:28px;
+  margin-bottom:10px;
+}
+
+.hero p{
+  color:#a6b1c8;
+  line-height:1.8;
+}
+
+.hero-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:20px;
+}
+
+.stat{
+  display:flex;
+  align-items:center;
+  gap:15px;
+}
+
+.stat-icon{
+  width:48px;
+  height:48px;
+  border-radius:14px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#1d2843;
+  font-size:22px;
+}
+
+.stat-number{
+  font-size:24px;
+  font-weight:bold;
+}
+
+.stat-label{
+  color:#8995ad;
+  font-size:13px;
+}
+
+/* SMART */
+
+.smart-box{
+  background:linear-gradient(135deg,#171d38,#10182a);
+  border:1px solid #393f70;
+}
+
+.ai-title{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.ai-title span{
+  width:38px;
+  height:38px;
+  background:#6c5ce7;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+}
+
+/* PROGRESS */
+
+.progress{
+  height:9px;
+  background:#202a40;
+  border-radius:20px;
+  overflow:hidden;
+  margin-top:10px;
+}
+
+.progress-bar{
+  height:100%;
+  width:0;
+  background:linear-gradient(90deg,#6c5ce7,#00cec9);
+  border-radius:20px;
+}
+
+/* LIST */
+
+.list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.list-item{
+  padding:14px;
+  background:#141e33;
+  border:1px solid #202b46;
+  border-radius:13px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+
+.item-info strong{
+  display:block;
+  margin-bottom:5px;
+}
+
+.item-info small{
+  color:#8995ad;
+}
+
+/* SUBJECT */
+
+.subject-card{
+  position:relative;
+  overflow:hidden;
+}
+
+.subject-card .emoji{
+  font-size:32px;
+  margin-bottom:12px;
+}
+
+.subject-card h3{
+  margin-bottom:6px;
+}
+
+.subject-card small{
+  color:#8995ad;
+}
+
+.subject-progress{
+  margin-top:16px;
+}
+
+/* FORM */
+
+.form{
+  display:grid;
+  gap:13px;
+}
+
+.form-row{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:13px;
+}
+
+label{
+  color:#aeb8cb;
+  font-size:13px;
+  margin-bottom:5px;
+  display:block;
+}
+
+input,select,textarea{
+  width:100%;
+  background:#0b1221;
+  color:white;
+  border:1px solid #293650;
+  border-radius:11px;
+  padding:12px;
+  outline:none;
+}
+
+input:focus,select:focus,textarea:focus{
+  border-color:#6c5ce7;
+}
+
+textarea{
+  min-height:100px;
+  resize:vertical;
+}
+
+/* MODAL */
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.7);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:100;
+  padding:20px;
+}
+
+.modal.show{
+  display:flex;
+}
+
+.modal-box{
+  width:min(600px,100%);
+  background:#10182a;
+  border:1px solid #2a3755;
+  border-radius:20px;
+  padding:22px;
+  max-height:90vh;
+  overflow:auto;
+}
+
+.modal-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+
+.close{
+  width:35px;
+  height:35px;
+  border-radius:10px;
+  background:#202a40;
+  color:white;
+}
+
+/* EMPTY */
+
+.empty{
+  text-align:center;
+  padding:40px 20px;
+  color:#78849e;
+}
+
+.empty-icon{
+  font-size:42px;
+  margin-bottom:10px;
+}
+
+/* BADGES */
+
+.badge{
+  padding:5px 9px;
+  border-radius:8px;
+  font-size:11px;
+  background:#26304b;
+  color:#c4cce0;
+}
+
+.badge-green{
+  background:#103b35;
+  color:#5de0c4;
+}
+
+.badge-red{
+  background:#3b1c25;
+  color:#ff8897;
+}
+
+.badge-yellow{
+  background:#3b3219;
+  color:#f5d76e;
+}
+
+/* RESPONSIVE */
+
+.mobile-menu{
+  display:none;
+}
+
+@media(max-width:900px){
+  .sidebar{
+    transform:translateX(100%);
+    transition:.25s;
+  }
+
+  .sidebar.open{
+    transform:translateX(0);
+  }
+
+  .main{
+    margin-right:0;
+    width:100%;
+    padding:15px;
+  }
+
+  .mobile-menu{
+    display:block;
+    background:#171f34;
+    color:#fff;
+    padding:10px 13px;
+    border-radius:10px;
+    margin-left:10px;
+  }
+
+  .topbar{
+    gap:10px;
+  }
+
+  .grid-4{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .grid-3{
+    grid-template-columns:1fr;
+  }
+
+  .grid-2{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:550px){
+  .grid-4{
+    grid-template-columns:1fr;
+  }
+
+  .form-row{
+    grid-template-columns:1fr;
+  }
+
+  .hero h2{
+    font-size:22px;
+  }
+}
+</style>
 </head>
 
 <body>
 
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
+<div class="app">
 
-    <div class="brand">
-      <div class="brand-icon">🎓</div>
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
 
-      <div>
-        <h1>Study AI</h1>
-        <p>مستقبلك يبدأ من هنا ✨</p>
-      </div>
+  <div class="logo">
+    <div class="logo-icon">🤖</div>
+    <div>
+      <h1>Study AI</h1>
+      <span>مساعدك الدراسي الذكي</span>
     </div>
+  </div>
 
-    <nav class="nav">
+  <nav class="nav">
 
-      <button class="active" onclick="scrollToSection('home')">
-        <span class="nav-icon">🏠</span>
-        الرئيسية
-      </button>
-
-      <button onclick="scrollToSection('analyzer')">
-        <span class="nav-icon">🖼️</span>
-        تحليل الدروس
-      </button>
-
-      <button onclick="scrollToSection('results')">
-        <span class="nav-icon">📝</span>
-        الاختبارات
-      </button>
-
-      <button onclick="scrollToSection('summary')">
-        <span class="nav-icon">📚</span>
-        الملخصات
-      </button>
-
-      <button onclick="openAIAssistant()">
-        <span class="nav-icon">🤖</span>
-        مساعد الذكاء
-      </button>
-
-      <button onclick="showToast('ميزة خطط المذاكرة قادمة قريبًا 🚀')">
-        <span class="nav-icon">📅</span>
-        خطط المذاكرة
-      </button>
-
-      <button onclick="showToast('الإحصائيات المتقدمة قادمة قريبًا 📊')">
-        <span class="nav-icon">📈</span>
-        متابعة المستوى
-      </button>
-
-    </nav>
-
-    <div class="sidebar-bottom">
-
-      <div class="sidebar-tip">
-        <strong>💡 نصيحة اليوم</strong>
-        <span>
-          ذاكر بذكاء، اختبر نفسك، وراجع أخطاءك باستمرار.
-        </span>
-      </div>
-
-      <div class="nav">
-
-        <button onclick="openAppearance()">
-          <span class="nav-icon">🎨</span>
-          تخصيص المظهر
-        </button>
-
-        <button onclick="toggleTheme()">
-          <span class="nav-icon">🌙</span>
-          الوضع الليلي
-        </button>
-
-      </div>
-
-    </div>
-
-  </aside>
-
-  <!-- Main -->
-  <main class="main" id="home">
-
-    <header class="topbar">
-
-      <button
-        class="icon-button mobile-menu"
-        onclick="toggleSidebar()"
-      >
-        ☰
-      </button>
-
-      <div class="search">
-        <span>🔎</span>
-        <input
-          id="searchInput"
-          type="text"
-          placeholder="ابحث عن أي شيء..."
-          oninput="handleSearch()"
-        >
-      </div>
-
-      <div class="top-actions">
-
-        <button
-          class="icon-button"
-          onclick="openAppearance()"
-          title="المظهر"
-        >
-          🎨
-        </button>
-
-        <button
-          class="icon-button"
-          onclick="openAIAssistant()"
-          title="مساعد الذكاء"
-        >
-          🤖
-        </button>
-
-        <div class="profile">
-          <div class="avatar">س</div>
-
-          <div class="profile-info">
-            <strong>الطالب</strong>
-            <br>
-            <small>مستعد للتفوق 🚀</small>
-          </div>
-        </div>
-
-      </div>
-
-    </header>
-
-    <!-- Hero -->
-    <section class="hero">
-
-      <div class="hero-content">
-
-        <h2>
-          مرحبًا بك في
-          <span class="gradient-text">Study AI</span>
-        </h2>
-
-        <p>
-          ارفع صور دروسك، ودع الذكاء الاصطناعي يحللها
-          ويحولها إلى شرح مبسط وملخص وأسئلة واختبار كامل.
-        </p>
-
-        <button
-          class="primary-button"
-          onclick="scrollToSection('analyzer')"
-        >
-          ابدأ الآن ←
-        </button>
-
-      </div>
-
-      <div class="hero-ai">🧠</div>
-
-    </section>
-
-    <!-- Stats -->
-    <div class="quick-grid">
-
-      <div class="stat-card">
-        <div class="stat-icon">🖼️</div>
-        <div class="stat-number" id="lessonsCount">0</div>
-        <div class="stat-label">الدروس المحللة</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">✓</div>
-        <div class="stat-number" id="testsCount">0</div>
-        <div class="stat-label">الاختبارات المكتملة</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">🔥</div>
-        <div class="stat-number">1</div>
-        <div class="stat-label">أيام المذاكرة المتتالية</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">📈</div>
-        <div class="stat-number" id="accuracyStat">0%</div>
-        <div class="stat-label">متوسط الإنجاز</div>
-      </div>
-
-    </div>
-
-    <!-- Tools -->
-    <section class="tools">
-
-      <div class="section-title">
-        <h3>⚡ أدوات سريعة</h3>
-        <span>ابدأ من هنا</span>
-      </div>
-
-      <div class="tools-grid">
-
-        <div class="tool-card">
-          <div class="tool-icon">🖼️</div>
-          <h4>تحليل الدروس</h4>
-          <p>ارفع صور الدرس وسيقوم الذكاء الاصطناعي بفهم المحتوى.</p>
-          <button
-            class="primary-button"
-            onclick="scrollToSection('analyzer')"
-          >
-            ابدأ الآن →
-          </button>
-        </div>
-
-        <div class="tool-card">
-          <div class="tool-icon">🤖</div>
-          <h4>مساعد الذكاء</h4>
-          <p>اسأل المساعد عن الدرس أو اطلب منه شرح أي نقطة.</p>
-          <button
-            class="secondary-button"
-            onclick="openAIAssistant()"
-          >
-            افتح المساعد
-          </button>
-        </div>
-
-        <div class="tool-card">
-          <div class="tool-icon">📝</div>
-          <h4>اختبار ذكي</h4>
-          <p>أنشئ اختبارًا متنوعًا من محتوى الدرس.</p>
-          <button
-            class="secondary-button"
-            onclick="scrollToSection('results')"
-          >
-            فتح الاختبار
-          </button>
-        </div>
-
-        <div class="tool-card">
-          <div class="tool-icon">📚</div>
-          <h4>ملخص الدرس</h4>
-          <p>احصل على أهم المعلومات بطريقة سهلة وسريعة.</p>
-          <button
-            class="secondary-button"
-            onclick="scrollToSection('summary')"
-          >
-            عرض الملخص
-          </button>
-        </div>
-
-      </div>
-
-    </section>
-
-    <!-- Analyzer -->
-    <section
-      class="upload-section"
-      id="analyzer"
-    >
-
-      <div class="section-title">
-        <h3>🧠 تحليل درس جديد</h3>
-        <span>الخطوة الأولى نحو الفهم</span>
-      </div>
-
-      <div
-        class="upload-box"
-        id="uploadBox"
-      >
-
-        <div class="upload-icon">📸</div>
-
-        <h3>ارفع صور الدرس</h3>
-
-        <p>
-          اسحب الصور هنا أو اضغط لاختيار الصور من جهازك
-        </p>
-
-        <input
-          type="file"
-          id="fileInput"
-          accept="image/*"
-          multiple
-        >
-
-        <button
-          class="primary-button"
-          onclick="document.getElementById('fileInput').click()"
-        >
-          📁 اختيار الصور
-        </button>
-
-      </div>
-
-      <div
-        class="preview-grid"
-        id="previewGrid"
-      ></div>
-
-      <div
-        class="status"
-        id="status"
-      ></div>
-
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
-
-        <button
-          class="primary-button"
-          id="analyzeButton"
-          onclick="analyzeLesson()"
-        >
-          🤖 تحليل الدرس
-        </button>
-
-        <button
-          class="secondary-button"
-          onclick="clearImages()"
-        >
-          🗑️ حذف الصور
-        </button>
-
-      </div>
-
-    </section>
-
-    <!-- Results -->
-    <section id="results">
-
-      <div class="results-header">
-
-        <h2>✨ نتيجة تحليل الدرس</h2>
-
-        <p>
-          تم تحليل محتوى الصور واستخراج المعلومات والأسئلة.
-        </p>
-
-      </div>
-
-      <div class="result-grid">
-
-        <div
-          class="result-card full"
-          id="summary"
-        >
-
-          <h3>📚 ملخص الدرس</h3>
-
-          <div
-            class="result-content"
-            id="summaryContent"
-          ></div>
-
-        </div>
-
-        <div class="result-card">
-
-          <h3>💡 الشرح المبسط</h3>
-
-          <div
-            class="result-content"
-            id="explanationContent"
-          ></div>
-
-        </div>
-
-        <div class="result-card">
-
-          <h3>⭐ أهم النقاط</h3>
-
-          <div
-            class="list"
-            id="importantPoints"
-          ></div>
-
-        </div>
-
-        <div class="result-card">
-
-          <h3>🔑 المصطلحات المهمة</h3>
-
-          <div
-            class="terms"
-            id="keyTerms"
-          ></div>
-
-        </div>
-
-        <div class="result-card">
-
-          <h3>📖 التعاريف</h3>
-
-          <div id="definitions"></div>
-
-        </div>
-
-        <div class="result-card">
-
-          <h3>📐 القوانين والمعادلات</h3>
-
-          <div id="laws"></div>
-
-        </div>
-
-        <div class="result-card full">
-
-          <h3>📝 الاختبار</h3>
-
-          <div
-            class="score-box"
-            id="scoreBox"
-          >
-
-            <div>نتيجتك</div>
-
-            <div
-              class="score-number"
-              id="scoreNumber"
-            >
-              0%
-            </div>
-
-            <div id="scoreText"></div>
-
-          </div>
-
-          <div id="quiz"></div>
-
-          <div class="quiz-actions">
-
-            <button
-              class="primary-button"
-              onclick="gradeQuiz()"
-            >
-              💯 تصحيح الاختبار
-            </button>
-
-            <button
-              class="secondary-button"
-              onclick="revealAnswers()"
-            >
-              👁️ إظهار الإجابات
-            </button>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-  </main>
-
-  <!-- Appearance -->
-  <div
-    class="appearance-overlay"
-    id="appearanceOverlay"
-    onclick="closeAppearance()"
-  ></div>
-
-  <aside
-    class="appearance-panel"
-    id="appearancePanel"
-  >
-
-    <div class="appearance-header">
-      <h3>🎨 تخصيص المظهر</h3>
-
-      <button
-        class="close-panel"
-        onclick="closeAppearance()"
-      >
-        ✕
-      </button>
-    </div>
-
-    <div class="setting-group">
-
-      <label>🎨 اللون الأساسي</label>
-
-      <div class="color-control">
-
-        <input
-          type="color"
-          id="primaryColor"
-          value="#168cff"
-        >
-
-        <div
-          class="color-value"
-          id="primaryColorValue"
-        >
-          #168cff
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="setting-group">
-
-      <label>🌌 لون الخلفية</label>
-
-      <div class="color-control">
-
-        <input
-          type="color"
-          id="backgroundColor"
-          value="#050b18"
-        >
-
-        <div
-          class="color-value"
-          id="backgroundColorValue"
-        >
-          #050b18
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="setting-group">
-
-      <label>✨ ألوان جاهزة</label>
-
-      <div class="presets">
-
-        <button
-          class="preset"
-          onclick="applyPreset('#168cff','#050b18')"
-        >
-          <div class="preset-color" style="background:#168cff"></div>
-          Ocean
-        </button>
-
-        <button
-          class="preset"
-          onclick="applyPreset('#8b5cf6','#090512')"
-        >
-          <div class="preset-color" style="background:#8b5cf6"></div>
-          Purple
-        </button>
-
-        <button
-          class="preset"
-          onclick="applyPreset('#10b981','#03120e')"
-        >
-          <div class="preset-color" style="background:#10b981"></div>
-          Emerald
-        </button>
-
-        <button
-          class="preset"
-          onclick="applyPreset('#ec4899','#16030d')"
-        >
-          <div class="preset-color" style="background:#ec4899"></div>
-          Pink
-        </button>
-
-        <button
-          class="preset"
-          onclick="applyPreset('#f59e0b','#160e03')"
-        >
-          <div class="preset-color" style="background:#f59e0b"></div>
-          Sunset
-        </button>
-
-        <button
-          class="preset"
-          onclick="applyPreset('#06b6d4','#031217')"
-        >
-          <div class="preset-color" style="background:#06b6d4"></div>
-          Cyan
-        </button>
-
-      </div>
-
-    </div>
-
-    <div class="setting-group">
-
-      <label>
-        💡 قوة التوهج:
-        <span id="glowValue">28</span>
-      </label>
-
-      <input
-        class="range"
-        id="glowRange"
-        type="range"
-        min="0"
-        max="60"
-        value="28"
-      >
-
-    </div>
-
-    <div class="setting-group">
-
-      <label>🌗 نمط الموقع</label>
-
-      <div class="theme-buttons">
-
-        <button
-          class="theme-button active"
-          id="darkButton"
-          onclick="setTheme('dark')"
-        >
-          🌙 داكن
-        </button>
-
-        <button
-          class="theme-button"
-          id="lightButton"
-          onclick="setTheme('light')"
-        >
-          ☀️ فاتح
-        </button>
-
-      </div>
-
-    </div>
-
-    <button
-      class="secondary-button reset-button"
-      onclick="resetAppearance()"
-    >
-      🔄 إعادة المظهر الافتراضي
+    <button class="active" onclick="showPage('home',this)">
+      <span class="nav-icon">🏠</span>
+      الرئيسية
     </button>
 
-  </aside>
+    <button onclick="showPage('subjects',this)">
+      <span class="nav-icon">📚</span>
+      موادي
+    </button>
 
-  <!-- AI Assistant -->
-  <button
-    class="ai-assistant-button"
-    onclick="toggleAIAssistant()"
-    title="مساعد الذكاء الاصطناعي"
-  >
-    🤖
-  </button>
+    <button onclick="showPage('curriculum',this)">
+      <span class="nav-icon">🗂️</span>
+      منهجي
+    </button>
 
-  <div
-    class="ai-assistant-panel"
-    id="aiAssistantPanel"
-  >
+    <button onclick="showPage('exams',this)">
+      <span class="nav-icon">📝</span>
+      اختباراتي
+    </button>
 
-    <div class="ai-assistant-header">
+    <button onclick="showPage('homework',this)">
+      <span class="nav-icon">📋</span>
+      واجباتي
+    </button>
 
-      <div class="ai-assistant-title">
+  </nav>
 
-        <div class="ai-assistant-avatar">
-          🤖
-        </div>
+</aside>
 
-        <div>
-          <strong>مساعد Study AI</strong>
-          <small>● متصل</small>
-        </div>
+<!-- MAIN -->
+<main class="main">
 
+  <div class="topbar">
+
+    <div style="display:flex;align-items:center;">
+      <button class="mobile-menu" onclick="toggleSidebar()">☰</button>
+
+      <div class="page-title">
+        <h2 id="pageTitle">الرئيسية</h2>
+        <p id="pageSubtitle">كل شيء تحتاجه للمذاكرة في مكان واحد</p>
       </div>
-
-      <button
-        class="ai-close"
-        onclick="toggleAIAssistant()"
-      >
-        ✕
-      </button>
-
     </div>
 
-    <div
-      class="ai-messages"
-      id="aiMessages"
-    >
-
-      <div class="ai-message bot">
-        👋 هلا! أنا مساعد Study AI.
-
-        أقدر أساعدك في فهم الدرس، شرح أي نقطة، أو أسوي لك اختبار.
-
-        حلل درس أولًا إذا تبي إجاباتي تكون مبنية على محتوى الدرس 📚
-      </div>
-
-    </div>
-
-    <div
-      class="ai-typing"
-      id="aiTyping"
-    >
-      🤖 المساعد يكتب...
-    </div>
-
-    <div class="ai-quick-actions">
-
-      <button onclick="askAIQuick('اشرح لي الدرس بطريقة سهلة')">
-        📚 اشرح الدرس
-      </button>
-
-      <button onclick="askAIQuick('ما أهم الأشياء التي يجب أن أحفظها؟')">
-        ⭐ أهم الأشياء
-      </button>
-
-      <button onclick="askAIQuick('اختبرني في الدرس')">
-        📝 اختبرني
-      </button>
-
-      <button onclick="askAIQuick('اشرح لي أصعب نقطة في الدرس')">
-        🧠 أصعب نقطة
-      </button>
-
-    </div>
-
-    <div class="ai-input-area">
-
-      <textarea
-        class="ai-input"
-        id="aiInput"
-        placeholder="اكتب سؤالك هنا..."
-        onkeydown="handleAIKeydown(event)"
-      ></textarea>
-
-      <button
-        class="ai-send"
-        onclick="sendAIMessage()"
-      >
-        ➤
-      </button>
-
+    <div class="user-box">
+      👨‍🎓 طالب
     </div>
 
   </div>
 
-  <div
-    class="toast"
-    id="toast"
-  ></div>
 
-  <script>
-    let selectedFiles = [];
-    let studyData = null;
+  <!-- ================= HOME ================= -->
 
-    const $ = id => document.getElementById(id);
+  <section class="page active" id="page-home">
 
-    /* =========================
-       Toast
-    ========================== */
+    <div class="hero">
 
-    let toastTimer;
+      <h2 id="welcomeText">👋 هلا بك في Study AI</h2>
 
-    function showToast(message) {
-      const toast = $("toast");
+      <p>
+        صفحتك الرئيسية الذكية تعرض لك أهم الأشياء التي تحتاجها الآن:
+        اختباراتك، واجباتك، موادك، ومنهجك.
+      </p>
 
-      toast.textContent = message;
-      toast.classList.add("show");
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="openModal('examModal')">
+          ➕ إضافة اختبار
+        </button>
 
-      clearTimeout(toastTimer);
+        <button class="btn btn-green" onclick="openModal('homeworkModal')">
+          ➕ إضافة واجب
+        </button>
 
-      toastTimer = setTimeout(() => {
-        toast.classList.remove("show");
-      }, 2800);
-    }
+        <button class="btn" onclick="showPageByName('subjects')">
+          📚 موادي
+        </button>
+      </div>
 
-    /* =========================
-       Navigation
-    ========================== */
+    </div>
 
-    function scrollToSection(id) {
-      const el = $(id);
 
-      if (!el) return;
+    <!-- STATS -->
 
-      el.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
+    <div class="grid grid-4">
 
-      $("sidebar").classList.remove("open");
-    }
+      <div class="card stat">
+        <div class="stat-icon">📝</div>
+        <div>
+          <div class="stat-number" id="statExams">0</div>
+          <div class="stat-label">اختبار قادم</div>
+        </div>
+      </div>
 
-    function toggleSidebar() {
-      $("sidebar").classList.toggle("open");
-    }
+      <div class="card stat">
+        <div class="stat-icon">📋</div>
+        <div>
+          <div class="stat-number" id="statHomework">0</div>
+          <div class="stat-label">واجب غير مكتمل</div>
+        </div>
+      </div>
 
-    /* =========================
-       Appearance
-    ========================== */
+      <div class="card stat">
+        <div class="stat-icon">📚</div>
+        <div>
+          <div class="stat-number" id="statSubjects">0</div>
+          <div class="stat-label">مادة</div>
+        </div>
+      </div>
 
-    function openAppearance() {
-      $("appearanceOverlay").classList.add("open");
-      $("appearancePanel").classList.add("open");
-    }
+      <div class="card stat">
+        <div class="stat-icon">📊</div>
+        <div>
+          <div class="stat-number" id="statProgress">0%</div>
+          <div class="stat-label">إنجاز المنهج</div>
+        </div>
+      </div>
 
-    function closeAppearance() {
-      $("appearanceOverlay").classList.remove("open");
-      $("appearancePanel").classList.remove("open");
-    }
+    </div>
 
-    function updatePrimaryColor(color) {
-      document.documentElement.style.setProperty(
-        "--primary",
-        color
-      );
 
-      $("primaryColorValue").textContent = color;
+    <!-- SMART HOME -->
 
-      saveAppearance();
-    }
+    <div class="section-title">
+      <h3>🤖 ماذا تحتاج الآن؟</h3>
+    </div>
 
-    function updateBackgroundColor(color) {
-      document.documentElement.style.setProperty(
-        "--bg",
-        color
-      );
+    <div class="grid grid-2">
 
-      $("backgroundColorValue").textContent = color;
+      <div class="card smart-box">
 
-      saveAppearance();
-    }
+        <div class="ai-title">
+          <span>🤖</span>
+          <div>
+            <strong>اقتراح Study AI</strong>
+          </div>
+        </div>
 
-    function updateGlow(value) {
-      document.documentElement.style.setProperty(
-        "--glow",
-        value + "px"
-      );
+        <p class="muted" id="smartSuggestion">
+          أضف اختبارات وواجبات ومواد حتى أستطيع اقتراح ما تحتاجه.
+        </p>
 
-      $("glowValue").textContent = value;
+        <div style="margin-top:15px;">
+          <button class="btn btn-primary" onclick="smartAction()">
+            🚀 ابدأ الآن
+          </button>
+        </div>
 
-      saveAppearance();
-    }
+      </div>
 
-    function applyPreset(primary, background) {
-      $("primaryColor").value = primary;
-      $("backgroundColor").value = background;
 
-      updatePrimaryColor(primary);
-      updateBackgroundColor(background);
+      <div class="card">
 
-      showToast("تم تطبيق المظهر 🎨");
-    }
+        <h3 style="margin-bottom:15px;">🎯 هدف اليوم</h3>
 
-    function setTheme(theme) {
-      if (theme === "light") {
-        document.body.classList.add("light");
-        $("lightButton").classList.add("active");
-        $("darkButton").classList.remove("active");
-      } else {
-        document.body.classList.remove("light");
-        $("darkButton").classList.add("active");
-        $("lightButton").classList.remove("active");
-      }
+        <div style="display:flex;justify-content:space-between;">
+          <span class="muted">إنجاز المنهج</span>
+          <strong id="homeProgressText">0%</strong>
+        </div>
 
-      localStorage.setItem(
-        "studyAI_theme",
-        theme
-      );
+        <div class="progress">
+          <div class="progress-bar" id="homeProgress"></div>
+        </div>
 
-      saveAppearance();
-    }
+        <p class="muted" style="margin-top:12px;">
+          استمر، وكل خطوة تقربك من هدفك 💪
+        </p>
 
-    function toggleTheme() {
-      setTheme(
-        document.body.classList.contains("light")
-          ? "dark"
-          : "light"
-      );
-    }
+      </div>
 
-    function saveAppearance() {
-      localStorage.setItem(
-        "studyAI_appearance",
-        JSON.stringify({
-          primary: $("primaryColor").value,
-          background: $("backgroundColor").value,
-          glow: $("glowRange").value,
-          theme: document.body.classList.contains("light")
-            ? "light"
-            : "dark"
-        })
-      );
-    }
+    </div>
 
-    function loadAppearance() {
-      let saved = null;
 
-      try {
-        saved = JSON.parse(
-          localStorage.getItem(
-            "studyAI_appearance"
-          ) || "null"
-        );
-      } catch {
-        saved = null;
-      }
+    <!-- UPCOMING -->
 
-      if (!saved) return;
+    <div class="section-title">
+      <h3>⏰ القادم</h3>
+    </div>
 
-      if (saved.primary) {
-        $("primaryColor").value = saved.primary;
-        updatePrimaryColor(saved.primary);
-      }
+    <div class="grid grid-2">
 
-      if (saved.background) {
-        $("backgroundColor").value = saved.background;
-        updateBackgroundColor(saved.background);
-      }
+      <div class="card">
+        <h3 style="margin-bottom:15px;">📝 أقرب الاختبارات</h3>
+        <div class="list" id="homeExams"></div>
+      </div>
 
-      if (saved.glow) {
-        $("glowRange").value = saved.glow;
-        updateGlow(saved.glow);
-      }
+      <div class="card">
+        <h3 style="margin-bottom:15px;">📋 الواجبات</h3>
+        <div class="list" id="homeHomework"></div>
+      </div>
 
-      setTheme(
-        saved.theme === "light"
-          ? "light"
-          : "dark"
-      );
-    }
+    </div>
 
-    function resetAppearance() {
-      $("primaryColor").value = "#168cff";
-      $("backgroundColor").value = "#050b18";
-      $("glowRange").value = "28";
+  </section>
 
-      updatePrimaryColor("#168cff");
-      updateBackgroundColor("#050b18");
-      updateGlow("28");
-      setTheme("dark");
 
-      showToast("تمت إعادة المظهر الافتراضي ✨");
-    }
+  <!-- ================= SUBJECTS ================= -->
 
-    $("primaryColor").addEventListener(
-      "input",
-      e => updatePrimaryColor(e.target.value)
+  <section class="page" id="page-subjects">
+
+    <div class="section-title">
+      <h3>📚 موادي</h3>
+
+      <button class="btn btn-primary" onclick="openModal('subjectModal')">
+        ➕ إضافة مادة
+      </button>
+    </div>
+
+    <div class="grid grid-3" id="subjectsList"></div>
+
+  </section>
+
+
+  <!-- ================= CURRICULUM ================= -->
+
+  <section class="page" id="page-curriculum">
+
+    <div class="section-title">
+
+      <div>
+        <h3>🗂️ منهجي</h3>
+        <p class="muted">تابع الوحدات والدروس ونسبة إنجازك</p>
+      </div>
+
+      <button class="btn btn-primary" onclick="openModal('lessonModal')">
+        ➕ إضافة درس
+      </button>
+
+    </div>
+
+    <div class="card" style="margin-bottom:18px;">
+
+      <div style="display:flex;justify-content:space-between;">
+        <strong>📊 نسبة إنجاز المنهج</strong>
+        <strong id="curriculumPercent">0%</strong>
+      </div>
+
+      <div class="progress">
+        <div class="progress-bar" id="curriculumBar"></div>
+      </div>
+
+    </div>
+
+    <div class="grid grid-2" id="curriculumList"></div>
+
+  </section>
+
+
+  <!-- ================= EXAMS ================= -->
+
+  <section class="page" id="page-exams">
+
+    <div class="section-title">
+
+      <div>
+        <h3>📝 اختباراتي</h3>
+        <p class="muted">رتب اختباراتك وتابع مواعيدها</p>
+      </div>
+
+      <button class="btn btn-primary" onclick="openModal('examModal')">
+        ➕ إضافة اختبار
+      </button>
+
+    </div>
+
+    <div class="grid grid-3" id="examsList"></div>
+
+  </section>
+
+
+  <!-- ================= HOMEWORK ================= -->
+
+  <section class="page" id="page-homework">
+
+    <div class="section-title">
+
+      <div>
+        <h3>📋 واجباتي</h3>
+        <p class="muted">لا تخلي أي واجب يفوتك</p>
+      </div>
+
+      <button class="btn btn-green" onclick="openModal('homeworkModal')">
+        ➕ إضافة واجب
+      </button>
+
+    </div>
+
+    <div class="grid grid-2" id="homeworkList"></div>
+
+  </section>
+
+</main>
+</div>
+
+
+<!-- ================= SUBJECT MODAL ================= -->
+
+<div class="modal" id="subjectModal">
+
+  <div class="modal-box">
+
+    <div class="modal-header">
+      <h2>➕ إضافة مادة</h2>
+      <button class="close" onclick="closeModal('subjectModal')">✕</button>
+    </div>
+
+    <form class="form" onsubmit="addSubject(event)">
+
+      <div>
+        <label>اسم المادة</label>
+        <input id="subjectName" required placeholder="مثال: الرياضيات">
+      </div>
+
+      <div>
+        <label>الإيموجي</label>
+        <input id="subjectEmoji" value="📚" placeholder="📚">
+      </div>
+
+      <div>
+        <label>نسبة الإنجاز</label>
+        <input id="subjectProgress" type="number" min="0" max="100" value="0">
+      </div>
+
+      <button class="btn btn-primary">
+        حفظ المادة
+      </button>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- ================= EXAM MODAL ================= -->
+
+<div class="modal" id="examModal">
+
+  <div class="modal-box">
+
+    <div class="modal-header">
+      <h2>📝 إضافة اختبار</h2>
+      <button class="close" onclick="closeModal('examModal')">✕</button>
+    </div>
+
+    <form class="form" onsubmit="addExam(event)">
+
+      <div>
+        <label>اسم الاختبار</label>
+        <input id="examName" required placeholder="مثال: اختبار الوحدة الأولى">
+      </div>
+
+      <div class="form-row">
+
+        <div>
+          <label>المادة</label>
+          <input id="examSubject" required placeholder="الرياضيات">
+        </div>
+
+        <div>
+          <label>التاريخ</label>
+          <input id="examDate" type="date" required>
+        </div>
+
+      </div>
+
+      <div>
+        <label>ملاحظات</label>
+        <textarea id="examNotes" placeholder="الفصول أو الدروس الداخلة في الاختبار"></textarea>
+      </div>
+
+      <button class="btn btn-primary">
+        حفظ الاختبار
+      </button>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- ================= HOMEWORK MODAL ================= -->
+
+<div class="modal" id="homeworkModal">
+
+  <div class="modal-box">
+
+    <div class="modal-header">
+      <h2>📋 إضافة واجب</h2>
+      <button class="close" onclick="closeModal('homeworkModal')">✕</button>
+    </div>
+
+    <form class="form" onsubmit="addHomework(event)">
+
+      <div>
+        <label>اسم الواجب</label>
+        <input id="homeworkName" required placeholder="مثال: حل تمارين صفحة 30">
+      </div>
+
+      <div class="form-row">
+
+        <div>
+          <label>المادة</label>
+          <input id="homeworkSubject" required placeholder="العلوم">
+        </div>
+
+        <div>
+          <label>موعد التسليم</label>
+          <input id="homeworkDate" type="date" required>
+        </div>
+
+      </div>
+
+      <div>
+        <label>ملاحظات</label>
+        <textarea id="homeworkNotes" placeholder="أي ملاحظات عن الواجب"></textarea>
+      </div>
+
+      <button class="btn btn-green">
+        حفظ الواجب
+      </button>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- ================= LESSON MODAL ================= -->
+
+<div class="modal" id="lessonModal">
+
+  <div class="modal-box">
+
+    <div class="modal-header">
+      <h2>➕ إضافة درس</h2>
+      <button class="close" onclick="closeModal('lessonModal')">✕</button>
+    </div>
+
+    <form class="form" onsubmit="addLesson(event)">
+
+      <div>
+        <label>اسم الدرس</label>
+        <input id="lessonName" required placeholder="مثال: المعادلات">
+      </div>
+
+      <div class="form-row">
+
+        <div>
+          <label>المادة</label>
+          <input id="lessonSubject" required placeholder="الرياضيات">
+        </div>
+
+        <div>
+          <label>الوحدة</label>
+          <input id="lessonUnit" required placeholder="الوحدة الأولى">
+        </div>
+
+      </div>
+
+      <button class="btn btn-primary">
+        حفظ الدرس
+      </button>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* ==========================================
+   DATA
+========================================== */
+
+let data = JSON.parse(
+  localStorage.getItem("studyAIData")
+) || {
+
+  subjects: [],
+
+  exams: [],
+
+  homework: [],
+
+  lessons: []
+
+};
+
+
+/* ==========================================
+   SAVE
+========================================== */
+
+function saveData(){
+
+  localStorage.setItem(
+    "studyAIData",
+    JSON.stringify(data)
+  );
+
+}
+
+
+/* ==========================================
+   NAVIGATION
+========================================== */
+
+const pageInfo = {
+
+  home:{
+    title:"الرئيسية",
+    subtitle:"كل شيء تحتاجه للمذاكرة في مكان واحد"
+  },
+
+  subjects:{
+    title:"موادي",
+    subtitle:"جميع موادك الدراسية"
+  },
+
+  curriculum:{
+    title:"منهجي",
+    subtitle:"تابع الوحدات والدروس ونسبة الإنجاز"
+  },
+
+  exams:{
+    title:"اختباراتي",
+    subtitle:"اختباراتك القادمة ومواعيدها"
+  },
+
+  homework:{
+    title:"واجباتي",
+    subtitle:"تابع واجباتك ومواعيد التسليم"
+  }
+
+};
+
+
+function showPage(page,button){
+
+  document.querySelectorAll(".page")
+    .forEach(p=>p.classList.remove("active"));
+
+  const target =
+    document.getElementById("page-"+page);
+
+  if(target){
+    target.classList.add("active");
+  }
+
+  document.querySelectorAll(".nav button")
+    .forEach(b=>b.classList.remove("active"));
+
+  if(button){
+    button.classList.add("active");
+  }
+
+  document.getElementById("pageTitle")
+    .textContent = pageInfo[page].title;
+
+  document.getElementById("pageSubtitle")
+    .textContent = pageInfo[page].subtitle;
+
+  document.getElementById("sidebar")
+    .classList.remove("open");
+
+  renderAll();
+
+}
+
+
+function showPageByName(page){
+
+  const button =
+    [...document.querySelectorAll(".nav button")]
+    .find(b =>
+      b.getAttribute("onclick")?.includes(
+        "'" + page + "'"
+      )
     );
 
-    $("backgroundColor").addEventListener(
-      "input",
-      e => updateBackgroundColor(e.target.value)
+  showPage(page,button);
+
+}
+
+
+function toggleSidebar(){
+
+  document
+    .getElementById("sidebar")
+    .classList.toggle("open");
+
+}
+
+
+/* ==========================================
+   MODALS
+========================================== */
+
+function openModal(id){
+
+  document
+    .getElementById(id)
+    .classList.add("show");
+
+}
+
+
+function closeModal(id){
+
+  document
+    .getElementById(id)
+    .classList.remove("show");
+
+}
+
+
+document.querySelectorAll(".modal")
+.forEach(modal=>{
+
+  modal.addEventListener("click",e=>{
+
+    if(e.target === modal){
+      modal.classList.remove("show");
+    }
+
+  });
+
+});
+
+
+/* ==========================================
+   SUBJECTS
+========================================== */
+
+function addSubject(e){
+
+  e.preventDefault();
+
+  const name =
+    document.getElementById("subjectName").value.trim();
+
+  const emoji =
+    document.getElementById("subjectEmoji").value.trim() || "📚";
+
+  const progress =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Number(
+          document.getElementById("subjectProgress").value
+        ) || 0
+      )
     );
 
-    $("glowRange").addEventListener(
-      "input",
-      e => updateGlow(e.target.value)
+  data.subjects.push({
+
+    id:Date.now(),
+
+    name,
+
+    emoji,
+
+    progress
+
+  });
+
+  saveData();
+
+  e.target.reset();
+
+  document.getElementById("subjectEmoji").value="📚";
+
+  closeModal("subjectModal");
+
+  renderAll();
+
+}
+
+
+function deleteSubject(id){
+
+  if(!confirm("هل تريد حذف هذه المادة؟")) return;
+
+  data.subjects =
+    data.subjects.filter(x=>x.id !== id);
+
+  saveData();
+
+  renderAll();
+
+}
+
+
+/* ==========================================
+   EXAMS
+========================================== */
+
+function addExam(e){
+
+  e.preventDefault();
+
+  const name =
+    document.getElementById("examName").value.trim();
+
+  const subject =
+    document.getElementById("examSubject").value.trim();
+
+  const date =
+    document.getElementById("examDate").value;
+
+  const notes =
+    document.getElementById("examNotes").value.trim();
+
+  data.exams.push({
+
+    id:Date.now(),
+
+    name,
+
+    subject,
+
+    date,
+
+    notes
+
+  });
+
+  saveData();
+
+  e.target.reset();
+
+  closeModal("examModal");
+
+  renderAll();
+
+}
+
+
+function deleteExam(id){
+
+  if(!confirm("هل تريد حذف هذا الاختبار؟")) return;
+
+  data.exams =
+    data.exams.filter(x=>x.id !== id);
+
+  saveData();
+
+  renderAll();
+
+}
+
+
+/* ==========================================
+   HOMEWORK
+========================================== */
+
+function addHomework(e){
+
+  e.preventDefault();
+
+  const name =
+    document.getElementById("homeworkName").value.trim();
+
+  const subject =
+    document.getElementById("homeworkSubject").value.trim();
+
+  const date =
+    document.getElementById("homeworkDate").value;
+
+  const notes =
+    document.getElementById("homeworkNotes").value.trim();
+
+  data.homework.push({
+
+    id:Date.now(),
+
+    name,
+
+    subject,
+
+    date,
+
+    notes,
+
+    done:false
+
+  });
+
+  saveData();
+
+  e.target.reset();
+
+  closeModal("homeworkModal");
+
+  renderAll();
+
+}
+
+
+function toggleHomework(id){
+
+  const item =
+    data.homework.find(x=>x.id===id);
+
+  if(!item) return;
+
+  item.done = !item.done;
+
+  saveData();
+
+  renderAll();
+
+}
+
+
+function deleteHomework(id){
+
+  if(!confirm("هل تريد حذف هذا الواجب؟")) return;
+
+  data.homework =
+    data.homework.filter(x=>x.id !== id);
+
+  saveData();
+
+  renderAll();
+
+}
+
+
+/* ==========================================
+   LESSONS
+========================================== */
+
+function addLesson(e){
+
+  e.preventDefault();
+
+  const name =
+    document.getElementById("lessonName").value.trim();
+
+  const subject =
+    document.getElementById("lessonSubject").value.trim();
+
+  const unit =
+    document.getElementById("lessonUnit").value.trim();
+
+  data.lessons.push({
+
+    id:Date.now(),
+
+    name,
+
+    subject,
+
+    unit,
+
+    done:false
+
+  });
+
+  saveData();
+
+  e.target.reset();
+
+  closeModal("lessonModal");
+
+  renderAll();
+
+}
+
+
+function toggleLesson(id){
+
+  const item =
+    data.lessons.find(x=>x.id===id);
+
+  if(!item) return;
+
+  item.done = !item.done;
+
+  saveData();
+
+  renderAll();
+
+}
+
+
+function deleteLesson(id){
+
+  if(!confirm("هل تريد حذف هذا الدرس؟")) return;
+
+  data.lessons =
+    data.lessons.filter(x=>x.id!==id);
+
+  saveData();
+
+  renderAll();
+
+}
+
+
+/* ==========================================
+   DATE HELPERS
+========================================== */
+
+function formatDate(date){
+
+  if(!date) return "-";
+
+  return new Date(
+    date+"T00:00:00"
+  ).toLocaleDateString(
+    "ar-KW",
+    {
+      weekday:"short",
+      year:"numeric",
+      month:"long",
+      day:"numeric"
+    }
+  );
+
+}
+
+
+function daysLeft(date){
+
+  if(!date) return "";
+
+  const today =
+    new Date();
+
+  today.setHours(0,0,0,0);
+
+  const target =
+    new Date(date+"T00:00:00");
+
+  const diff =
+    Math.ceil(
+      (target-today) /
+      (1000*60*60*24)
     );
 
-    /* =========================
-       Upload
-    ========================== */
+  if(diff < 0)
+    return "منتهي";
 
-    const fileInput = $("fileInput");
-    const uploadBox = $("uploadBox");
-    const previewGrid = $("previewGrid");
+  if(diff === 0)
+    return "اليوم 🔥";
 
-    fileInput.addEventListener(
-      "change",
-      e => addFiles(e.target.files)
+  if(diff === 1)
+    return "غدًا";
+
+  return `بعد ${diff} يوم`;
+
+}
+
+
+function statusForDate(date){
+
+  if(!date) return "";
+
+  const today =
+    new Date();
+
+  today.setHours(0,0,0,0);
+
+  const target =
+    new Date(date+"T00:00:00");
+
+  const diff =
+    Math.ceil(
+      (target-today) /
+      (1000*60*60*24)
     );
 
-    ["dragenter","dragover"].forEach(name => {
-      uploadBox.addEventListener(name,e => {
-        e.preventDefault();
-        uploadBox.classList.add("dragover");
-      });
-    });
+  if(diff < 0)
+    return `<span class="badge badge-red">منتهي</span>`;
 
-    ["dragleave","drop"].forEach(name => {
-      uploadBox.addEventListener(name,e => {
-        e.preventDefault();
-        uploadBox.classList.remove("dragover");
-      });
-    });
+  if(diff <= 2)
+    return `<span class="badge badge-yellow">قريب</span>`;
 
-    uploadBox.addEventListener(
-      "drop",
-      e => addFiles(e.dataTransfer.files)
+  return `<span class="badge badge-green">قادماً</span>`;
+
+}
+
+
+/* ==========================================
+   RENDER SUBJECTS
+========================================== */
+
+function renderSubjects(){
+
+  const box =
+    document.getElementById("subjectsList");
+
+  if(!data.subjects.length){
+
+    box.innerHTML = `
+      <div class="card empty" style="grid-column:1/-1;">
+        <div class="empty-icon">📚</div>
+        <h3>ما عندك مواد حتى الآن</h3>
+        <p style="margin:10px 0 18px;">
+          أضف موادك الدراسية وابدأ بمتابعة تقدمك.
+        </p>
+        <button class="btn btn-primary"
+          onclick="openModal('subjectModal')">
+          ➕ إضافة أول مادة
+        </button>
+      </div>
+    `;
+
+    return;
+  }
+
+
+  box.innerHTML =
+    data.subjects.map(subject=>`
+
+      <div class="card subject-card">
+
+        <div class="emoji">${escapeHtml(subject.emoji)}</div>
+
+        <h3>${escapeHtml(subject.name)}</h3>
+
+        <small>
+          إنجاز المادة ${subject.progress}%
+        </small>
+
+        <div class="progress subject-progress">
+          <div
+            class="progress-bar"
+            style="width:${subject.progress}%">
+          </div>
+        </div>
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          margin-top:15px;
+          gap:8px;
+        ">
+
+          <button
+            class="btn btn-small"
+            onclick="showSubjectDetails(${subject.id})">
+            👁️ التفاصيل
+          </button>
+
+          <button
+            class="btn btn-small btn-red"
+            onclick="deleteSubject(${subject.id})">
+            🗑️
+          </button>
+
+        </div>
+
+      </div>
+
+    `).join("");
+
+}
+
+
+function showSubjectDetails(id){
+
+  const subject =
+    data.subjects.find(x=>x.id===id);
+
+  if(!subject) return;
+
+  const lessons =
+    data.lessons.filter(
+      x=>x.subject.toLowerCase() ===
+      subject.name.toLowerCase()
     );
 
-    function addFiles(files) {
-      const images = Array.from(files || [])
-        .filter(file => file.type.startsWith("image/"));
+  alert(
+`📚 ${subject.name}
 
-      if (!images.length) {
-        showToast("اختر ملفات صور فقط 📸");
-        return;
-      }
+نسبة الإنجاز: ${subject.progress}%
 
-      for (const file of images) {
+عدد الدروس المضافة: ${lessons.length}
 
-        if (selectedFiles.length >= 20) {
-          showToast("الحد الأقصى 20 صورة.");
-          break;
+عدد الاختبارات: ${
+  data.exams.filter(
+    x=>x.subject.toLowerCase() ===
+    subject.name.toLowerCase()
+  ).length
+}`
+  );
+
+}
+
+
+/* ==========================================
+   RENDER EXAMS
+========================================== */
+
+function renderExams(){
+
+  const box =
+    document.getElementById("examsList");
+
+  const exams =
+    [...data.exams].sort(
+      (a,b)=>a.date.localeCompare(b.date)
+    );
+
+  if(!exams.length){
+
+    box.innerHTML = `
+      <div class="card empty"
+        style="grid-column:1/-1;">
+
+        <div class="empty-icon">📝</div>
+
+        <h3>لا توجد اختبارات</h3>
+
+        <p style="margin:10px 0 18px;">
+          أضف اختبارك القادم حتى يظهر لك في الرئيسية.
+        </p>
+
+        <button
+          class="btn btn-primary"
+          onclick="openModal('examModal')">
+          ➕ إضافة اختبار
+        </button>
+
+      </div>
+    `;
+
+    return;
+  }
+
+
+  box.innerHTML =
+    exams.map(exam=>`
+
+      <div class="card">
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:start;
+          gap:10px;
+        ">
+
+          <div>
+
+            <span class="badge">📝 اختبار</span>
+
+            <h3 style="margin-top:12px;">
+              ${escapeHtml(exam.name)}
+            </h3>
+
+            <p class="muted" style="margin-top:7px;">
+              📚 ${escapeHtml(exam.subject)}
+            </p>
+
+          </div>
+
+          ${statusForDate(exam.date)}
+
+        </div>
+
+        <div style="
+          background:#141e33;
+          border-radius:12px;
+          padding:13px;
+          margin-top:16px;
+        ">
+
+          <strong>📅 ${formatDate(exam.date)}</strong>
+
+          <div class="muted" style="margin-top:5px;">
+            ⏰ ${daysLeft(exam.date)}
+          </div>
+
+        </div>
+
+        ${
+          exam.notes
+          ?
+          `<p class="muted" style="margin-top:12px;">
+            ${escapeHtml(exam.notes)}
+          </p>`
+          :
+          ""
         }
 
-        if (file.size > 10 * 1024 * 1024) {
-          showToast(
-            `الصورة ${file.name} أكبر من 10MB`
-          );
-          continue;
-        }
+        <button
+          class="btn btn-small btn-red"
+          style="margin-top:15px;"
+          onclick="deleteExam(${exam.id})">
+          🗑️ حذف
+        </button>
 
-        selectedFiles.push(file);
-      }
+      </div>
 
-      renderPreviews();
-    }
+    `).join("");
 
-    function renderPreviews() {
-      previewGrid.innerHTML = "";
+}
 
-      selectedFiles.forEach((file,index) => {
 
-        const reader = new FileReader();
+/* ==========================================
+   RENDER HOMEWORK
+========================================== */
 
-        reader.onload = () => {
+function renderHomework(){
 
-          const item = document.createElement("div");
+  const box =
+    document.getElementById("homeworkList");
 
-          item.className = "preview-item";
+  const list =
+    [...data.homework].sort(
+      (a,b)=>a.date.localeCompare(b.date)
+    );
 
-          item.innerHTML = `
-            <img src="${reader.result}" alt="صورة الدرس">
+  if(!list.length){
 
-            <button
-              class="remove-image"
-              type="button"
-            >
-              ×
-            </button>
-          `;
+    box.innerHTML = `
+      <div class="card empty"
+        style="grid-column:1/-1;">
 
-          item
-            .querySelector(".remove-image")
-            .addEventListener("click",() => {
-              selectedFiles.splice(index,1);
-              renderPreviews();
-            });
+        <div class="empty-icon">📋</div>
 
-          previewGrid.appendChild(item);
-        };
+        <h3>لا توجد واجبات</h3>
 
-        reader.readAsDataURL(file);
-      });
-    }
+        <p style="margin:10px 0 18px;">
+          أضف واجباتك حتى تتابعها بسهولة.
+        </p>
 
-    function clearImages() {
-      selectedFiles = [];
-      fileInput.value = "";
-      previewGrid.innerHTML = "";
+        <button
+          class="btn btn-green"
+          onclick="openModal('homeworkModal')">
+          ➕ إضافة واجب
+        </button>
 
-      showToast("تم حذف الصور 🗑️");
-    }
+      </div>
+    `;
 
-    /* =========================
-       Analyze
-    ========================== */
+    return;
+  }
 
-    async function analyzeLesson() {
 
-      if (!selectedFiles.length) {
-        showToast("ارفع صورة واحدة على الأقل أولاً 📸");
-        return;
-      }
+  box.innerHTML =
+    list.map(item=>`
 
-      const button = $("analyzeButton");
-      const status = $("status");
+      <div class="card">
 
-      button.disabled = true;
-      button.style.opacity = ".65";
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:start;
+          gap:10px;
+        ">
 
-      status.style.display = "block";
+          <div>
 
-      status.innerHTML = `
-        <span class="spinner"></span>
-        الذكاء الاصطناعي يحلل الدرس...
-      `;
+            <span class="badge">
+              📋 واجب
+            </span>
 
-      $("results").style.display = "none";
+            <h3 style="margin-top:12px;">
+              ${escapeHtml(item.name)}
+            </h3>
 
-      try {
+            <p class="muted" style="margin-top:7px;">
+              📚 ${escapeHtml(item.subject)}
+            </p>
 
-        const formData = new FormData();
-
-        selectedFiles.forEach(file => {
-          formData.append("images",file);
-        });
-
-        const response = await fetch(
-          "/api/analyze",
-          {
-            method: "POST",
-            body: formData
-          }
-        );
-
-        let data;
-
-        try {
-          data = await response.json();
-        } catch {
-          throw new Error(
-            "السيرفر أرسل استجابة غير صالحة."
-          );
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            data?.error ||
-            "حدث خطأ أثناء تحليل الدرس."
-          );
-        }
-
-        studyData = normalizeStudyData(data);
-
-        renderStudyData(studyData);
-
-        $("results").style.display = "block";
-
-        updateLessonCount();
-
-        status.style.display = "none";
-
-        $("results").scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-
-        showToast("تم تحليل الدرس بنجاح 🎉");
-
-      } catch(error) {
-
-        console.error(error);
-
-        status.innerHTML =
-          "❌ " +
-          escapeHtml(
-            error.message ||
-            "حدث خطأ غير متوقع."
-          );
-
-        showToast(
-          error.message ||
-          "حدث خطأ أثناء التحليل."
-        );
-
-      } finally {
-
-        button.disabled = false;
-        button.style.opacity = "1";
-      }
-    }
-
-    /* =========================
-       Data
-    ========================== */
-
-    function normalizeStudyData(data) {
-      const arr = value =>
-        Array.isArray(value)
-          ? value
-          : [];
-
-      return {
-        summary:
-          typeof data?.summary === "string"
-            ? data.summary
-            : "",
-
-        explanation:
-          typeof data?.explanation === "string"
-            ? data.explanation
-            : "",
-
-        important_points:
-          arr(data?.important_points),
-
-        key_terms:
-          arr(data?.key_terms),
-
-        definitions:
-          arr(data?.definitions),
-
-        laws:
-          arr(data?.laws),
-
-        quiz:
-          arr(data?.quiz)
-      };
-    }
-
-    function renderStudyData(data) {
-
-      $("summaryContent").textContent =
-        data.summary ||
-        "لم يتم استخراج ملخص.";
-
-      $("explanationContent").textContent =
-        data.explanation ||
-        "لم يتم استخراج شرح.";
-
-      renderImportantPoints(
-        data.important_points
-      );
-
-      renderTerms(
-        data.key_terms
-      );
-
-      renderDefinitions(
-        data.definitions
-      );
-
-      renderLaws(
-        data.laws
-      );
-
-      renderQuiz(
-        data.quiz
-      );
-
-      $("scoreBox").style.display = "none";
-    }
-
-    function renderImportantPoints(points) {
-
-      const container = $("importantPoints");
-
-      container.innerHTML = "";
-
-      if (!points.length) {
-        container.innerHTML =
-          `<div class="list-item">
-            لا توجد نقاط مهمة مستخرجة.
-          </div>`;
-        return;
-      }
-
-      points.forEach(point => {
-
-        const item =
-          document.createElement("div");
-
-        item.className = "list-item";
-
-        item.textContent =
-          typeof point === "string"
-            ? point
-            : JSON.stringify(point);
-
-        container.appendChild(item);
-      });
-    }
-
-    function renderTerms(terms) {
-
-      const container = $("keyTerms");
-
-      container.innerHTML = "";
-
-      if (!terms.length) {
-        container.innerHTML =
-          `<span class="term">
-            لا توجد مصطلحات
-          </span>`;
-        return;
-      }
-
-      terms.forEach(term => {
-
-        const item =
-          document.createElement("span");
-
-        item.className = "term";
-
-        item.textContent =
-          typeof term === "string"
-            ? term
-            : term?.term ||
-              JSON.stringify(term);
-
-        container.appendChild(item);
-      });
-    }
-
-    function renderDefinitions(definitions) {
-
-      const container = $("definitions");
-
-      container.innerHTML = "";
-
-      if (!definitions.length) {
-        container.innerHTML =
-          `<div class="definition">
-            لا توجد تعاريف واضحة في الصور.
-          </div>`;
-        return;
-      }
-
-      definitions.forEach(def => {
-
-        const item =
-          document.createElement("div");
-
-        item.className = "definition";
-
-        item.innerHTML = `
-          <strong>
-            ${escapeHtml(def?.term || "تعريف")}
-          </strong>
-
-          ${escapeHtml(def?.definition || "")}
-        `;
-
-        container.appendChild(item);
-      });
-    }
-
-    function renderLaws(laws) {
-
-      const container = $("laws");
-
-      container.innerHTML = "";
-
-      if (!laws.length) {
-        container.innerHTML =
-          `<div class="law">
-            لا توجد قوانين أو معادلات واضحة في الصور.
-          </div>`;
-        return;
-      }
-
-      laws.forEach(law => {
-
-        const item =
-          document.createElement("div");
-
-        item.className = "law";
-
-        item.innerHTML = `
-          <strong>
-            ${escapeHtml(law?.title || "قانون")}
-          </strong>
+          </div>
 
           ${
-            law?.formula
-              ? `
-                <div class="formula">
-                  ${escapeHtml(law.formula)}
-                </div>
-              `
-              : ""
+            item.done
+            ?
+            `<span class="badge badge-green">مكتمل</span>`
+            :
+            statusForDate(item.date)
           }
 
-          ${escapeHtml(law?.explanation || "")}
-        `;
+        </div>
 
-        container.appendChild(item);
-      });
-    }
+        <div style="
+          background:#141e33;
+          border-radius:12px;
+          padding:13px;
+          margin-top:16px;
+        ">
 
-    /* =========================
-       Quiz
-    ========================== */
+          <strong>
+            📅 ${formatDate(item.date)}
+          </strong>
 
-    function renderQuiz(quiz) {
-
-      const container = $("quiz");
-
-      container.innerHTML = "";
-
-      if (!quiz.length) {
-        container.innerHTML =
-          `<div class="quiz-question">
-            لم يتم إنشاء أسئلة.
-          </div>`;
-        return;
-      }
-
-      quiz.forEach((question,index) => {
-
-        const item =
-          document.createElement("div");
-
-        item.className = "quiz-question";
-
-        const type =
-          question?.type || "written";
-
-        let optionsHTML = "";
-
-        if (
-          type === "choice" ||
-          type === "truefalse"
-        ) {
-
-          const options =
-            Array.isArray(question?.options)
-              ? question.options
-              : [];
-
-          optionsHTML =
-            options.map(option => `
-              <label class="option">
-
-                <input
-                  type="radio"
-                  name="question-${index}"
-                  value="${escapeAttr(option)}"
-                >
-
-                <span>
-                  ${escapeHtml(option)}
-                </span>
-
-              </label>
-            `).join("");
-
-        } else {
-
-          optionsHTML = `
-            <textarea
-              class="written-answer"
-              id="written-${index}"
-              placeholder="اكتب إجابتك هنا..."
-            ></textarea>
-          `;
-        }
-
-        item.innerHTML = `
-          <div class="quiz-number">
-            السؤال ${index + 1}
+          <div class="muted" style="margin-top:5px;">
+            ⏰ ${item.done ? "تم الإنجاز 🎉" : daysLeft(item.date)}
           </div>
 
-          <div class="question-text">
-            ${escapeHtml(question?.question || "")}
-          </div>
+        </div>
 
-          ${optionsHTML}
-
-          <div
-            class="question-result"
-            id="question-result-${index}"
-          ></div>
-        `;
-
-        container.appendChild(item);
-      });
-    }
-
-    function gradeQuiz() {
-
-      if (
-        !studyData ||
-        !studyData.quiz ||
-        !studyData.quiz.length
-      ) {
-        showToast("لا يوجد اختبار للتصحيح.");
-        return;
-      }
-
-      let correct = 0;
-
-      const total =
-        studyData.quiz.length;
-
-      studyData.quiz.forEach(
-        (question,index) => {
-
-          const type =
-            question?.type || "written";
-
-          let userAnswer = "";
-
-          if (
-            type === "choice" ||
-            type === "truefalse"
-          ) {
-
-            const selected =
-              document.querySelector(
-                `input[name="question-${index}"]:checked`
-              );
-
-            userAnswer =
-              selected?.value || "";
-
-          } else {
-
-            userAnswer =
-              $(`written-${index}`)?.value || "";
-          }
-
-          const isCorrect =
-            checkAnswer(
-              userAnswer,
-              question
-            );
-
-          if (isCorrect) {
-            correct++;
-          }
-
-          showQuestionResult(
-            index,
-            isCorrect,
-            question
-          );
-        }
-      );
-
-      const percentage =
-        Math.round(
-          (correct / total) * 100
-        );
-
-      $("scoreNumber").textContent =
-        percentage + "%";
-
-      $("scoreText").textContent =
-        `أجبت بشكل صحيح على ${correct} من ${total} سؤال`;
-
-      $("scoreBox").style.display = "block";
-
-      updateTestStats(percentage);
-
-      showToast(
-        `نتيجتك ${percentage}% 🎉`
-      );
-    }
-
-    function checkAnswer(userAnswer,question) {
-
-      const user =
-        normalizeArabic(userAnswer);
-
-      if (!user) return false;
-
-      const accepted = [
-        question?.answer,
-        ...(Array.isArray(
-          question?.accepted_answers
-        )
-          ? question.accepted_answers
-          : [])
-      ]
-        .filter(Boolean)
-        .map(normalizeArabic);
-
-      if (!accepted.length) {
-        return false;
-      }
-
-      return accepted.some(answer => {
-
-        if (answer === user) {
-          return true;
+        ${
+          item.notes
+          ?
+          `<p class="muted" style="margin-top:12px;">
+            ${escapeHtml(item.notes)}
+          </p>`
+          :
+          ""
         }
 
-        if (
-          user.length >= 4 &&
-          answer.length >= 4
-        ) {
-          return (
-            user.includes(answer) ||
-            answer.includes(user)
-          );
-        }
+        <div style="
+          display:flex;
+          gap:8px;
+          margin-top:15px;
+        ">
 
-        return false;
-      });
-    }
-
-    function showQuestionResult(
-      index,
-      correct,
-      question
-    ) {
-
-      const result =
-        $(`question-result-${index}`);
-
-      if (!result) return;
-
-      result.className =
-        "question-result " +
-        (correct ? "correct" : "wrong");
-
-      if (correct) {
-
-        result.textContent =
-          "✅ إجابة صحيحة";
-
-      } else {
-
-        result.innerHTML = `
-          ❌ إجابة غير صحيحة
-          <br>
-          <strong>الإجابة:</strong>
-          ${escapeHtml(
-            question?.answer ||
-            "غير متوفرة"
-          )}
-        `;
-      }
-    }
-
-    function revealAnswers() {
-
-      if (
-        !studyData ||
-        !studyData.quiz
-      ) {
-        showToast("حلل درسًا أولًا.");
-        return;
-      }
-
-      studyData.quiz.forEach(
-        (question,index) => {
-
-          const result =
-            $(`question-result-${index}`);
-
-          if (!result) return;
-
-          result.className =
-            "question-result correct";
-
-          result.innerHTML = `
-            💡 الإجابة الصحيحة:
-            <strong>
-              ${escapeHtml(
-                question?.answer ||
-                "غير متوفرة"
-              )}
-            </strong>
-          `;
-        }
-      );
-
-      showToast("تم إظهار الإجابات 👁️");
-    }
-
-    function normalizeArabic(text) {
-
-      return String(text || "")
-        .toLowerCase()
-        .trim()
-        .replace(/[ًٌٍَُِّْـ]/g,"")
-        .replace(/[إأآ]/g,"ا")
-        .replace(/ى/g,"ي")
-        .replace(/ة/g,"ه")
-        .replace(/ؤ/g,"و")
-        .replace(/ئ/g,"ي")
-        .replace(/[.,!?،؛:()[\]{}"']/g," ")
-        .replace(/\s+/g," ");
-    }
-
-    /* =========================
-       Stats
-    ========================== */
-
-    function updateLessonCount() {
-
-      const current =
-        Number(
-          localStorage.getItem(
-            "studyAI_lessons"
-          ) || 0
-        );
-
-      const next = current + 1;
-
-      localStorage.setItem(
-        "studyAI_lessons",
-        next
-      );
-
-      $("lessonsCount").textContent =
-        next;
-    }
-
-    function updateTestStats(percentage) {
-
-      const count =
-        Number(
-          localStorage.getItem(
-            "studyAI_tests"
-          ) || 0
-        );
-
-      localStorage.setItem(
-        "studyAI_tests",
-        count + 1
-      );
-
-      $("testsCount").textContent =
-        count + 1;
-
-      const previous =
-        Number(
-          localStorage.getItem(
-            "studyAI_accuracy"
-          ) || 0
-        );
-
-      const average =
-        count === 0
-          ? percentage
-          : Math.round(
-              (
-                previous * count +
-                percentage
-              ) /
-              (count + 1)
-            );
-
-      localStorage.setItem(
-        "studyAI_accuracy",
-        average
-      );
-
-      $("accuracyStat").textContent =
-        average + "%";
-    }
-
-    function loadStats() {
-
-      $("lessonsCount").textContent =
-        Number(
-          localStorage.getItem(
-            "studyAI_lessons"
-          ) || 0
-        );
-
-      $("testsCount").textContent =
-        Number(
-          localStorage.getItem(
-            "studyAI_tests"
-          ) || 0
-        );
-
-      $("accuracyStat").textContent =
-        Number(
-          localStorage.getItem(
-            "studyAI_accuracy"
-          ) || 0
-        ) + "%";
-    }
-
-    /* =========================
-       Search
-    ========================== */
-
-    function handleSearch() {
-
-      const value =
-        $("searchInput").value
-          .trim()
-          .toLowerCase();
-
-      document
-        .querySelectorAll(
-          ".result-card,.tool-card"
-        )
-        .forEach(el => {
-
-          if (!value) {
-            el.style.display = "";
-            return;
-          }
-
-          el.style.display =
-            el.textContent
-              .toLowerCase()
-              .includes(value)
+          <button
+            class="btn btn-small ${
+              item.done
               ? ""
-              : "none";
-        });
-    }
+              : "btn-green"
+            }"
+            onclick="toggleHomework(${item.id})">
 
-    /* =========================
-       AI Assistant
-    ========================== */
-
-    function openAIAssistant() {
-
-      const panel =
-        $("aiAssistantPanel");
-
-      panel.classList.add("open");
-
-      setTimeout(() => {
-        $("aiInput")?.focus();
-      },100);
-
-      $("sidebar").classList.remove("open");
-    }
-
-    function toggleAIAssistant() {
-
-      const panel =
-        $("aiAssistantPanel");
-
-      panel.classList.toggle("open");
-
-      if (panel.classList.contains("open")) {
-        setTimeout(() => {
-          $("aiInput")?.focus();
-        },100);
-      }
-    }
-
-    function handleAIKeydown(event) {
-
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
-        event.preventDefault();
-        sendAIMessage();
-      }
-    }
-
-    function askAIQuick(message) {
-
-      $("aiInput").value = message;
-
-      sendAIMessage();
-    }
-
-    function addAIMessage(
-      message,
-      type
-    ) {
-
-      const container =
-        $("aiMessages");
-
-      const div =
-        document.createElement("div");
-
-      div.className =
-        `ai-message ${type}`;
-
-      div.textContent = message;
-
-      container.appendChild(div);
-
-      container.scrollTop =
-        container.scrollHeight;
-    }
-
-    async function sendAIMessage() {
-
-      const input = $("aiInput");
-
-      const message =
-        input.value.trim();
-
-      if (!message) return;
-
-      input.value = "";
-
-      addAIMessage(
-        message,
-        "user"
-      );
-
-      $("aiTyping")
-        .classList
-        .add("show");
-
-      try {
-
-        const response =
-          await fetch(
-            "/api/chat",
-            {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body: JSON.stringify({
-                message: message,
-                lesson: studyData
-              })
+            ${
+              item.done
+              ? "↩️ إلغاء الإنجاز"
+              : "✅ تم الإنجاز"
             }
-          );
 
-        let data;
+          </button>
 
-        try {
-          data =
-            await response.json();
-        } catch {
-          throw new Error(
-            "استجابة غير صالحة من السيرفر."
-          );
-        }
+          <button
+            class="btn btn-small btn-red"
+            onclick="deleteHomework(${item.id})">
+            🗑️
+          </button>
 
-        if (!response.ok) {
-          throw new Error(
-            data?.error ||
-            "حدث خطأ في المساعد."
-          );
-        }
+        </div>
 
-        addAIMessage(
-          data?.answer ||
-          "ما قدرت أطلع إجابة الآن.",
-          "bot"
-        );
+      </div>
 
-      } catch(error) {
+    `).join("");
 
-        console.error(error);
+}
 
-        addAIMessage(
-          "❌ " +
-          (
-            error.message ||
-            "حدث خطأ أثناء الاتصال بالمساعد."
-          ),
-          "bot"
-        );
 
-      } finally {
+/* ==========================================
+   RENDER CURRICULUM
+========================================== */
 
-        $("aiTyping")
-          .classList
-          .remove("show");
-      }
-    }
+function renderCurriculum(){
 
-    /* =========================
-       Escape
-    ========================== */
+  const box =
+    document.getElementById("curriculumList");
 
-    function escapeHtml(value) {
+  const lessons =
+    data.lessons;
 
-      return String(value ?? "")
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
-    }
+  const total =
+    lessons.length;
 
-    function escapeAttr(value) {
-      return escapeHtml(value)
-        .replace(/`/g,"&#096;");
-    }
+  const completed =
+    lessons.filter(x=>x.done).length;
 
-    /* =========================
-       Start
-    ========================== */
+  const percent =
+    total
+    ?
+    Math.round(
+      completed / total * 100
+    )
+    :
+    0;
 
-    document.addEventListener(
-      "DOMContentLoaded",
-      () => {
-        loadAppearance();
-        loadStats();
-      }
+  document.getElementById("curriculumPercent")
+    .textContent = percent+"%";
+
+  document.getElementById("curriculumBar")
+    .style.width = percent+"%";
+
+
+  if(!lessons.length){
+
+    box.innerHTML = `
+      <div class="card empty"
+        style="grid-column:1/-1;">
+
+        <div class="empty-icon">🗂️</div>
+
+        <h3>منهجك فارغ</h3>
+
+        <p style="margin:10px 0 18px;">
+          أضف دروسك ووحداتك وابدأ بتتبع الإنجاز.
+        </p>
+
+        <button
+          class="btn btn-primary"
+          onclick="openModal('lessonModal')">
+          ➕ إضافة أول درس
+        </button>
+
+      </div>
+    `;
+
+    return;
+  }
+
+
+  const groups = {};
+
+  lessons.forEach(lesson=>{
+
+    const key =
+      `${lesson.subject}|||${lesson.unit}`;
+
+    if(!groups[key])
+      groups[key] = [];
+
+    groups[key].push(lesson);
+
+  });
+
+
+  box.innerHTML =
+    Object.entries(groups)
+    .map(([key,list])=>{
+
+      const [subject,unit] =
+        key.split("|||");
+
+      const done =
+        list.filter(x=>x.done).length;
+
+      const percent =
+        Math.round(done/list.length*100);
+
+      return `
+
+        <div class="card">
+
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            gap:10px;
+          ">
+
+            <div>
+
+              <span class="badge">
+                📚 ${escapeHtml(subject)}
+              </span>
+
+              <h3 style="margin-top:12px;">
+                ${escapeHtml(unit)}
+              </h3>
+
+            </div>
+
+            <strong>${percent}%</strong>
+
+          </div>
+
+          <div class="progress">
+            <div
+              class="progress-bar"
+              style="width:${percent}%">
+            </div>
+          </div>
+
+          <div class="list" style="margin-top:15px;">
+
+            ${
+              list.map(lesson=>`
+
+                <div class="list-item">
+
+                  <div class="item-info">
+
+                    <strong>
+                      ${
+                        lesson.done
+                        ? "✅ "
+                        : "📖 "
+                      }
+
+                      ${escapeHtml(lesson.name)}
+                    </strong>
+
+                    <small>
+                      ${
+                        lesson.done
+                        ? "تمت مراجعة الدرس"
+                        : "لم تتم مراجعة الدرس"
+                      }
+                    </small>
+
+                  </div>
+
+                  <div style="
+                    display:flex;
+                    gap:5px;
+                  ">
+
+                    <button
+                      class="btn btn-small"
+                      onclick="toggleLesson(${lesson.id})">
+
+                      ${
+                        lesson.done
+                        ? "↩️"
+                        : "✅"
+                      }
+
+                    </button>
+
+                    <button
+                      class="btn btn-small btn-red"
+                      onclick="deleteLesson(${lesson.id})">
+                      🗑️
+                    </button>
+
+                  </div>
+
+                </div>
+
+              `).join("")
+            }
+
+          </div>
+
+        </div>
+
+      `;
+
+    }).join("");
+
+}
+
+
+/* ==========================================
+   HOME
+========================================== */
+
+function renderHome(){
+
+  const upcomingExams =
+    [...data.exams]
+    .filter(x=>x.date)
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .slice(0,4);
+
+  const homework =
+    [...data.homework]
+    .filter(x=>!x.done)
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .slice(0,4);
+
+
+  const examsBox =
+    document.getElementById("homeExams");
+
+  if(!upcomingExams.length){
+
+    examsBox.innerHTML = `
+      <div class="empty">
+        📝 لا توجد اختبارات قادمة
+      </div>
+    `;
+
+  }else{
+
+    examsBox.innerHTML =
+      upcomingExams.map(exam=>`
+
+        <div class="list-item">
+
+          <div class="item-info">
+
+            <strong>
+              📝 ${escapeHtml(exam.name)}
+            </strong>
+
+            <small>
+              ${escapeHtml(exam.subject)}
+              ·
+              ${formatDate(exam.date)}
+            </small>
+
+          </div>
+
+          ${statusForDate(exam.date)}
+
+        </div>
+
+      `).join("");
+
+  }
+
+
+  const homeworkBox =
+    document.getElementById("homeHomework");
+
+  if(!homework.length){
+
+    homeworkBox.innerHTML = `
+      <div class="empty">
+        📋 لا توجد واجبات غير مكتملة
+      </div>
+    `;
+
+  }else{
+
+    homeworkBox.innerHTML =
+      homework.map(item=>`
+
+        <div class="list-item">
+
+          <div class="item-info">
+
+            <strong>
+              📋 ${escapeHtml(item.name)}
+            </strong>
+
+            <small>
+              ${escapeHtml(item.subject)}
+              ·
+              ${formatDate(item.date)}
+            </small>
+
+          </div>
+
+          ${statusForDate(item.date)}
+
+        </div>
+
+      `).join("");
+
+  }
+
+
+  updateSmartSuggestion();
+
+}
+
+
+/* ==========================================
+   SMART HOME
+========================================== */
+
+function updateSmartSuggestion(){
+
+  const box =
+    document.getElementById("smartSuggestion");
+
+  const today =
+    new Date();
+
+  today.setHours(0,0,0,0);
+
+
+  const exams =
+    data.exams
+    .filter(x=>x.date)
+    .map(x=>({
+
+      ...x,
+
+      days:
+        Math.ceil(
+          (new Date(x.date+"T00:00:00")-today)/
+          (1000*60*60*24)
+        )
+
+    }))
+    .filter(x=>x.days>=0)
+    .sort((a,b)=>a.days-b.days);
+
+
+  const incompleteHomework =
+    data.homework
+    .filter(x=>!x.done)
+    .sort((a,b)=>a.date.localeCompare(b.date));
+
+
+  const incompleteLessons =
+    data.lessons
+    .filter(x=>!x.done);
+
+
+  if(exams.length){
+
+    const exam = exams[0];
+
+    box.innerHTML =
+      `📝 عندك اختبار <strong>${escapeHtml(exam.name)}</strong>
+      في مادة <strong>${escapeHtml(exam.subject)}</strong>
+      ${exam.days===0 ? "اليوم!" : `بعد ${exam.days} يوم`}.
+      أنصحك تبدأ مراجعة المادة الآن.`;
+
+    return;
+  }
+
+
+  if(incompleteHomework.length){
+
+    const item =
+      incompleteHomework[0];
+
+    box.innerHTML =
+      `📋 عندك واجب غير مكتمل:
+      <strong>${escapeHtml(item.name)}</strong>.
+      موعده ${formatDate(item.date)}.`;
+
+    return;
+  }
+
+
+  if(incompleteLessons.length){
+
+    const lesson =
+      incompleteLessons[0];
+
+    box.innerHTML =
+      `📖 عندك درس لم تتم مراجعته:
+      <strong>${escapeHtml(lesson.name)}</strong>
+      في مادة ${escapeHtml(lesson.subject)}.`;
+
+    return;
+  }
+
+
+  if(data.subjects.length){
+
+    box.innerHTML =
+      `🎉 ممتاز! أمورك مرتبة حاليًا.
+      اختر مادة وابدأ جلسة مذاكرة جديدة.`;
+
+    return;
+  }
+
+
+  box.textContent =
+    "ابدأ بإضافة موادك واختباراتك وواجباتك حتى تصبح الصفحة الرئيسية ذكية فعلًا.";
+}
+
+
+function smartAction(){
+
+  if(data.exams.length){
+
+    showPageByName("exams");
+    return;
+
+  }
+
+  if(data.homework.length){
+
+    showPageByName("homework");
+    return;
+
+  }
+
+  showPageByName("subjects");
+
+}
+
+
+/* ==========================================
+   STATS
+========================================== */
+
+function renderStats(){
+
+  const exams =
+    data.exams.filter(x=>{
+
+      if(!x.date) return false;
+
+      const today =
+        new Date();
+
+      today.setHours(0,0,0,0);
+
+      return new Date(x.date+"T00:00:00") >= today;
+
+    }).length;
+
+
+  const homework =
+    data.homework.filter(
+      x=>!x.done
+    ).length;
+
+
+  const subjects =
+    data.subjects.length;
+
+
+  const lessons =
+    data.lessons.length;
+
+  const doneLessons =
+    data.lessons.filter(
+      x=>x.done
+    ).length;
+
+
+  const progress =
+    lessons
+    ?
+    Math.round(
+      doneLessons / lessons * 100
+    )
+    :
+    (
+      subjects
+      ?
+      Math.round(
+        data.subjects.reduce(
+          (sum,x)=>sum+Number(x.progress||0),
+          0
+        ) / subjects
+      )
+      :
+      0
     );
-  </script>
+
+
+  document.getElementById("statExams")
+    .textContent = exams;
+
+  document.getElementById("statHomework")
+    .textContent = homework;
+
+  document.getElementById("statSubjects")
+    .textContent = subjects;
+
+  document.getElementById("statProgress")
+    .textContent = progress+"%";
+
+  document.getElementById("homeProgressText")
+    .textContent = progress+"%";
+
+  document.getElementById("homeProgress")
+    .style.width = progress+"%";
+
+}
+
+
+/* ==========================================
+   ESCAPE HTML
+========================================== */
+
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+
+/* ==========================================
+   RENDER ALL
+========================================== */
+
+function renderAll(){
+
+  renderSubjects();
+
+  renderExams();
+
+  renderHomework();
+
+  renderCurriculum();
+
+  renderHome();
+
+  renderStats();
+
+}
+
+
+/* ==========================================
+   WELCOME
+========================================== */
+
+function setWelcome(){
+
+  const hour =
+    new Date().getHours();
+
+  let greeting =
+    "👋 هلا بك في Study AI";
+
+  if(hour < 12)
+    greeting = "🌅 صباح الخير!";
+
+  else if(hour < 18)
+    greeting = "☀️ هلا! يوم دراسي موفق";
+
+  else
+    greeting = "🌙 مساء الخير!";
+
+  document.getElementById("welcomeText")
+    .textContent = greeting;
+
+}
+
+
+/* ==========================================
+   DEMO DATA
+========================================== */
+
+/*
+  البيانات تبدأ فارغة.
+  إذا أردت تجربة الموقع بسرعة، احذف التعليق
+  عن السطر التالي.
+
+  addDemoData();
+*/
+
+function addDemoData(){
+
+  if(
+    data.subjects.length ||
+    data.exams.length ||
+    data.homework.length ||
+    data.lessons.length
+  ) return;
+
+
+  data.subjects = [
+
+    {
+      id:1,
+      name:"الرياضيات",
+      emoji:"📐",
+      progress:65
+    },
+
+    {
+      id:2,
+      name:"العلوم",
+      emoji:"🔬",
+      progress:40
+    },
+
+    {
+      id:3,
+      name:"اللغة العربية",
+      emoji:"📖",
+      progress:80
+    }
+
+  ];
+
+
+  const today =
+    new Date();
+
+  function dateAfter(days){
+
+    const d =
+      new Date(today);
+
+    d.setDate(
+      d.getDate()+days
+    );
+
+    return d.toISOString()
+      .split("T")[0];
+
+  }
+
+
+  data.exams = [
+
+    {
+      id:10,
+      name:"اختبار الوحدة الأولى",
+      subject:"الرياضيات",
+      date:dateAfter(2),
+      notes:"المعادلات والدوال"
+    },
+
+    {
+      id:11,
+      name:"اختبار العلوم",
+      subject:"العلوم",
+      date:dateAfter(6),
+      notes:"الفصل الثاني"
+    }
+
+  ];
+
+
+  data.homework = [
+
+    {
+      id:20,
+      name:"حل تمارين صفحة 30",
+      subject:"الرياضيات",
+      date:dateAfter(1),
+      notes:"الأسئلة من 1 إلى 10",
+      done:false
+    },
+
+    {
+      id:21,
+      name:"تلخيص الدرس",
+      subject:"العلوم",
+      date:dateAfter(4),
+      notes:"",
+      done:false
+    }
+
+  ];
+
+
+  data.lessons = [
+
+    {
+      id:30,
+      name:"المعادلات",
+      subject:"الرياضيات",
+      unit:"الوحدة الأولى",
+      done:true
+    },
+
+    {
+      id:31,
+      name:"الدوال",
+      subject:"الرياضيات",
+      unit:"الوحدة الأولى",
+      done:false
+    },
+
+    {
+      id:32,
+      name:"الطاقة",
+      subject:"العلوم",
+      unit:"الوحدة الثانية",
+      done:false
+    }
+
+  ];
+
+
+  saveData();
+
+  renderAll();
+
+}
+
+
+/* ==========================================
+   START
+========================================== */
+
+setWelcome();
+
+renderAll();
+
+</script>
 
 </body>
 </html>
