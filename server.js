@@ -1,4 +1,5 @@
 import "dotenv/config";
+
 import express from "express";
 import multer from "multer";
 import OpenAI from "openai";
@@ -10,25 +11,30 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-const PORT = process.env.PORT || 3000;
-
-
-// ======================================================
-// OpenAI
-// ======================================================
+const PORT =
+  process.env.PORT || 3000;
 
 if (!process.env.OPENAI_API_KEY) {
-  console.error("ERROR: OPENAI_API_KEY is missing.");
+  console.error(
+    "❌ OPENAI_API_KEY غير موجودة في Environment Variables."
+  );
 }
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+app.use(express.json({
+  limit: "2mb"
+}));
 
-// ======================================================
-// Multer - رفع الصور
-// ======================================================
+app.use(
+  express.static(__dirname)
+);
+
+/* =========================
+   Multer
+========================= */
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -38,171 +44,202 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024
   },
 
-  fileFilter: (req, file, cb) => {
-    if (!file.mimetype || !file.mimetype.startsWith("image/")) {
-      return cb(new Error("يمكن رفع الصور فقط."));
-    }
+  fileFilter: (req,file,cb) => {
 
-    cb(null, true);
+    if (
+      file.mimetype &&
+      file.mimetype.startsWith("image/")
+    ) {
+      cb(null,true);
+    } else {
+      cb(
+        new Error(
+          "يسمح برفع الصور فقط."
+        )
+      );
+    }
   }
 });
 
+/* =========================
+   JSON Cleaning
+========================= */
 
-// ======================================================
-// ملفات الموقع
-// ======================================================
+function cleanJsonText(text) {
 
-app.use(express.static(__dirname));
+  let cleaned =
+    String(text || "")
+      .trim();
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
+  cleaned =
+    cleaned.replace(
+      /^```(?:json)?\s*/i,
+      ""
+    );
 
+  cleaned =
+    cleaned.replace(
+      /\s*```$/i,
+      ""
+    );
 
-// ======================================================
-// تعليمات الذكاء الاصطناعي
-// ======================================================
+  const first =
+    cleaned.indexOf("{");
 
-const instructions = `
-أنت Study AI، مساعد دراسة ذكي متخصص في فهم الدروس المدرسية من الصور.
+  const last =
+    cleaned.lastIndexOf("}");
 
-سيتم إرسال صورة واحدة أو عدة صور لصفحات درس.
+  if (
+    first !== -1 &&
+    last !== -1 &&
+    last > first
+  ) {
+    cleaned =
+      cleaned.slice(
+        first,
+        last + 1
+      );
+  }
 
-مهمتك هي فهم محتوى الصور بالكامل، وليس مجرد نسخ النص الموجود فيها.
+  return cleaned;
+}
 
-اقرأ جميع الصور معًا وكأنها صفحات متتابعة من نفس الدرس.
+/* =========================
+   Normalize Study Data
+========================= */
 
-يجب أن تعتمد على المعلومات الموجودة في الصور فقط.
+function normalizeStudyData(data) {
 
-لا تخترع أي معلومة غير موجودة في الدرس.
+  const arrayOrEmpty = value =>
+    Array.isArray(value)
+      ? value
+      : [];
 
-إذا كانت معلومة غير واضحة فلا تخمنها.
+  return {
 
-استخرج من الدرس:
+    summary:
+      typeof data?.summary === "string"
+        ? data.summary
+        : "",
 
-1. ملخص واضح ومختصر.
-2. شرح مبسط يساعد الطالب على فهم الدرس.
-3. أهم النقاط التي يجب التركيز عليها.
-4. المصطلحات المهمة.
-5. التعاريف الموجودة فعليًا في الدرس.
-6. القوانين والمعادلات الموجودة فعليًا في الدرس.
-7. اختبار مختلط مبني على محتوى الدرس.
+    explanation:
+      typeof data?.explanation === "string"
+        ? data.explanation
+        : "",
 
-بالنسبة للتعاريف:
+    important_points:
+      arrayOrEmpty(
+        data?.important_points
+      ),
 
-استخرج التعاريف الواضحة الموجودة في الدرس فقط.
+    key_terms:
+      arrayOrEmpty(
+        data?.key_terms
+      ),
 
-كل تعريف يجب أن يكون بهذا الشكل:
+    definitions:
+      arrayOrEmpty(
+        data?.definitions
+      ),
 
-term = المصطلح
-definition = تعريفه
+    laws:
+      arrayOrEmpty(
+        data?.laws
+      ),
 
-إذا لم توجد تعاريف واضحة، استخدم مصفوفة فارغة.
+    quiz:
+      arrayOrEmpty(
+        data?.quiz
+      )
+  };
+}
 
-بالنسبة للقوانين:
+/* =========================
+   Analyze Lesson
+========================= */
 
-استخرج القوانين والمعادلات الموجودة في الدرس فقط.
+app.post(
+  "/api/analyze",
+  upload.array("images",20),
+  async (req,res) => {
 
-كل قانون يجب أن يحتوي على:
+    try {
 
-title = اسم القانون أو موضوعه
-formula = القانون أو المعادلة
-explanation = شرح بسيط له
+      if (
+        !process.env.OPENAI_API_KEY
+      ) {
+        return res.status(500).json({
+          error:
+            "OPENAI_API_KEY غير موجودة في السيرفر."
+        });
+      }
 
-إذا لم توجد قوانين أو معادلات، استخدم مصفوفة فارغة.
+      if (
+        !req.files ||
+        !req.files.length
+      ) {
+        return res.status(400).json({
+          error:
+            "لم يتم رفع أي صورة."
+        });
+      }
 
-بالنسبة للاختبار:
+      const imageContents =
+        req.files.map(file => {
 
-أنشئ اختبارًا من 10 إلى 15 سؤالًا عندما يسمح محتوى الدرس بذلك.
+          const base64 =
+            file.buffer.toString(
+              "base64"
+            );
 
-اجعل الاختبار متنوعًا.
+          const dataUrl =
+            `data:${file.mimetype};base64,${base64}`;
 
-استخدم:
+          return {
+            type: "input_image",
+            image_url: dataUrl,
+            detail: "high"
+          };
+        });
 
-choice
-truefalse
-written
+      const instructions = `
+أنت Study AI، مساعد تعليمي ذكي.
 
-أسئلة الاختيار من متعدد يجب أن تحتوي على 4 خيارات.
+مهمتك تحليل صور الدرس المرفقة وفهم محتواها بشكل دلالي، وليس مجرد قراءة النص.
 
-إجابة واحدة فقط تكون صحيحة.
+قواعد مهمة جدًا:
 
-answer يجب أن تكون مطابقة تمامًا لأحد الخيارات.
+1. افهم جميع الصور معًا باعتبارها درسًا واحدًا.
+2. اعتمد فقط على المعلومات الموجودة في الصور.
+3. لا تخترع معلومات غير موجودة في الدرس.
+4. إذا كانت معلومة غير واضحة، لا تخمن.
+5. اكتب باللغة العربية الواضحة.
+6. اجعل الشرح مناسبًا للطالب وسهل الفهم.
 
-أسئلة الصح والخطأ يجب أن تحتوي على:
+أنشئ JSON فقط بدون Markdown وبدون code fences.
 
-صح
-خطأ
-
-وanswer يجب أن تكون إما:
-
-صح
-
-أو:
-
-خطأ
-
-الأسئلة الكتابية يجب أن تحتوي على إجابة نموذجية قصيرة.
-
-يمكن وضع إجابات بديلة صحيحة في accepted_answers.
-
-اجعل الأسئلة مثل أسئلة الاختبارات المدرسية الحقيقية.
-
-استخدم أسئلة مثل:
-
-علل.
-وضح.
-اذكر.
-قارن.
-استنتج.
-ما السبب؟
-ما النتيجة؟
-ماذا يحدث إذا؟
-أي العبارات التالية صحيحة؟
-احسب.
-استخدم القانون.
-فسر.
-
-لا تجعل الاختبار كله أسئلة حفظ بسيطة.
-
-إذا كان الدرس يحتوي على قوانين، اجعل بعض الأسئلة تختبر استخدام القانون وفهمه.
-
-لا تستخدم أسئلة غير مرتبطة بمحتوى الصور.
-
-لا تضف معلومات من خارج الدرس.
-
-أعد النتيجة بصيغة JSON فقط.
-
-لا تكتب أي كلام قبل JSON.
-
-لا تكتب أي كلام بعد JSON.
-
-لا تستخدم Markdown داخل النتيجة.
-
-استخدم الشكل التالي:
+الشكل المطلوب:
 
 {
-  "summary": "ملخص الدرس",
+  "summary": "ملخص واضح ومختصر للدرس",
   "explanation": "شرح مبسط للدرس",
   "important_points": [
-    "نقطة مهمة",
     "نقطة مهمة"
   ],
   "key_terms": [
-    "مصطلح",
     "مصطلح"
   ],
   "definitions": [
     {
       "term": "المصطلح",
-      "definition": "التعريف"
+      "definition": "تعريفه"
     }
   ],
   "laws": [
     {
       "title": "اسم القانون",
       "formula": "القانون",
-      "explanation": "شرح القانون"
+      "explanation": "شرح بسيط"
     }
   ],
   "quiz": [
@@ -210,12 +247,12 @@ answer يجب أن تكون مطابقة تمامًا لأحد الخيارات.
       "type": "choice",
       "question": "السؤال",
       "options": [
-        "الخيار الأول",
-        "الخيار الثاني",
-        "الخيار الثالث",
-        "الخيار الرابع"
+        "الخيار 1",
+        "الخيار 2",
+        "الخيار 3",
+        "الخيار 4"
       ],
-      "answer": "الخيار الصحيح",
+      "answer": "الإجابة الصحيحة",
       "accepted_answers": []
     },
     {
@@ -230,661 +267,320 @@ answer يجب أن تكون مطابقة تمامًا لأحد الخيارات.
     },
     {
       "type": "written",
-      "question": "السؤال الكتابي",
+      "question": "سؤال كتابي",
       "options": [],
-      "answer": "الإجابة النموذجية",
+      "answer": "الإجابة",
       "accepted_answers": [
-        "إجابة بديلة صحيحة"
+        "إجابة بديلة"
       ]
     }
   ]
 }
+
+قواعد الاختبار:
+
+- أنشئ من 10 إلى 15 سؤالًا عندما يسمح محتوى الدرس.
+- اجعل الأسئلة متنوعة.
+- استخدم اختيار من متعدد.
+- استخدم صح وخطأ.
+- استخدم أسئلة كتابية.
+- يمكن أن تتضمن الأسئلة:
+  - اشرح.
+  - علل.
+  - قارن.
+  - استنتج.
+  - احسب إذا كان هناك قانون أو أرقام.
+  - ما السبب؟
+  - ما النتيجة؟
+- أسئلة الاختيار من متعدد يجب أن تحتوي على 4 خيارات بالضبط.
+- يجب أن تكون هناك إجابة صحيحة واحدة.
+- أسئلة صح وخطأ يجب أن تحتوي على:
+  ["صح","خطأ"]
+- الأسئلة الكتابية يجب أن تحتوي على answer و accepted_answers.
+- لا تضف قوانين إذا لم توجد قوانين واضحة في الصور.
+- لا تضف تعاريف إذا لم توجد تعاريف واضحة.
 `;
 
 
-// ======================================================
-// API تحليل الصور
-// ======================================================
+      const response =
+        await openai.responses.create({
 
-app.post(
-  "/api/analyze",
-  upload.array("images", 20),
-  async (req, res) => {
+          model:
+            process.env.OPENAI_MODEL ||
+            "gpt-5.6-luna",
 
-    try {
+          instructions,
 
-      // -----------------------------------------------
-      // التأكد من وجود المفتاح
-      // -----------------------------------------------
+          input: [
+            {
+              role: "user",
 
-      if (!process.env.OPENAI_API_KEY) {
-        return res.status(500).json({
-          error:
-            "OPENAI_API_KEY غير موجود في Environment Variables في Render."
+              content: [
+                {
+                  type: "input_text",
+
+                  text:
+                    "حلل جميع صور الدرس المرفقة معًا. افهم محتوى الدرس ثم أنشئ الملخص والشرح وأهم النقاط والمصطلحات والتعاريف والقوانين والاختبار حسب التعليمات."
+                },
+
+                ...imageContents
+              ]
+            }
+          ]
         });
-      }
 
 
-      // -----------------------------------------------
-      // التأكد من وجود الصور
-      // -----------------------------------------------
-
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({
-          error: "لم يتم رفع أي صورة."
-        });
-      }
-
-
-      // -----------------------------------------------
-      // تحويل الصور إلى Data URLs
-      // -----------------------------------------------
-
-      const imageContents = req.files.map((file) => {
-
-        const base64 =
-          file.buffer.toString("base64");
-
-        const dataUrl =
-          `data:${file.mimetype};base64,${base64}`;
-
-        return {
-          type: "input_image",
-          image_url: dataUrl,
-          detail: "high"
-        };
-      });
-
-
-      // -----------------------------------------------
-      // إرسال الصور للذكاء الاصطناعي
-      // -----------------------------------------------
-
-      const response = await openai.responses.create({
-
-        model:
-          process.env.OPENAI_MODEL ||
-          "gpt-5.6-luna",
-
-        instructions: instructions,
-
-        input: [
-          {
-            role: "user",
-
-            content: [
-
-              {
-                type: "input_text",
-
-                text:
-                  "حلل جميع صور الدرس المرفقة معًا. افهم محتوى الدرس ثم أنشئ الملخص والشرح وأهم النقاط والمصطلحات والتعاريف والقوانين والاختبار حسب التعليمات."
-              },
-
-              ...imageContents
-
-            ]
-          }
-        ]
-      });
-
-
-      // -----------------------------------------------
-      // الحصول على نتيجة الذكاء الاصطناعي
-      // -----------------------------------------------
-
-      let output =
+      const raw =
         response.output_text || "";
 
-      output = output.trim();
+      const jsonText =
+        cleanJsonText(raw);
 
-
-      if (!output) {
-        return res.status(500).json({
-          error:
-            "لم يرجع الذكاء الاصطناعي أي نتيجة."
-        });
-      }
-
-
-      // -----------------------------------------------
-      // تنظيف نتيجة JSON
-      // -----------------------------------------------
-
-      output = cleanJsonText(output);
-
-
-      // -----------------------------------------------
-      // تحويل JSON
-      // -----------------------------------------------
-
-      let data;
+      let parsed;
 
       try {
 
-        data = JSON.parse(output);
+        parsed =
+          JSON.parse(jsonText);
 
-      } catch (error) {
+      } catch (parseError) {
 
         console.error(
-          "JSON PARSE ERROR:"
+          "JSON PARSE ERROR:",
+          parseError
         );
 
-        console.error(output);
+        console.error(
+          "MODEL OUTPUT:",
+          raw
+        );
 
         return res.status(500).json({
           error:
-            "الذكاء الاصطناعي أرجع نتيجة غير صالحة. حاول مرة أخرى."
+            "الذكاء الاصطناعي أرسل نتيجة غير صالحة. حاول مرة أخرى."
         });
       }
 
-
-      // -----------------------------------------------
-      // ترتيب وتنظيف البيانات
-      // -----------------------------------------------
-
       const result =
-        normalizeStudyData(data);
+        normalizeStudyData(parsed);
 
+      res.json(result);
 
-      // -----------------------------------------------
-      // إرسال النتيجة للموقع
-      // -----------------------------------------------
-
-      return res.json(result);
-
-    } catch (error) {
+    } catch(error) {
 
       console.error(
-        "ANALYZE ERROR:"
+        "ANALYZE ERROR:",
+        error
       );
 
-      console.error(error);
-
-
-      let message =
-        "حدث خطأ أثناء تحليل الصور.";
-
-
-      if (error && error.message) {
-        message = error.message;
-      }
-
-
-      return res.status(500).json({
-        error: message
+      res.status(500).json({
+        error:
+          error?.message ||
+          "حدث خطأ أثناء تحليل الدرس."
       });
     }
   }
 );
 
+/* =========================
+   AI Assistant
+========================= */
 
-// ======================================================
-// تنظيف JSON
-// ======================================================
+app.post(
+  "/api/chat",
+  async (req,res) => {
 
-function cleanJsonText(text) {
-
-  let result =
-    String(text || "").trim();
-
-
-  // إزالة مسافات زائدة
-  result =
-    result.trim();
-
-
-  // إذا رجع النموذج JSON داخل علامات code block
-  if (result.startsWith("```")) {
-
-    result =
-      result.replace(/^```[a-zA-Z]*\s*/, "");
-
-    result =
-      result.replace(/\s*```$/, "");
-
-    result =
-      result.trim();
-  }
-
-
-  // إذا كان هناك كلام قبل JSON أو بعده
-  const firstBrace =
-    result.indexOf("{");
-
-  const lastBrace =
-    result.lastIndexOf("}");
-
-
-  if (
-    firstBrace !== -1 &&
-    lastBrace !== -1 &&
-    lastBrace > firstBrace
-  ) {
-
-    result =
-      result.substring(
-        firstBrace,
-        lastBrace + 1
-      );
-  }
-
-
-  return result.trim();
-}
-
-
-// ======================================================
-// تنظيف البيانات الرئيسية
-// ======================================================
-
-function normalizeStudyData(data) {
-
-  return {
-
-    summary:
-      typeof data?.summary === "string"
-        ? data.summary.trim()
-        : "",
-
-
-    explanation:
-      typeof data?.explanation === "string"
-        ? data.explanation.trim()
-        : "",
-
-
-    important_points:
-      normalizeStringArray(
-        data?.important_points
-      ),
-
-
-    key_terms:
-      normalizeKeyTerms(
-        data?.key_terms
-      ),
-
-
-    definitions:
-      normalizeDefinitions(
-        data?.definitions
-      ),
-
-
-    laws:
-      normalizeLaws(
-        data?.laws
-      ),
-
-
-    quiz:
-      normalizeQuiz(
-        data?.quiz
-      )
-
-  };
-}
-
-
-// ======================================================
-// تنظيف Arrays النصوص
-// ======================================================
-
-function normalizeStringArray(value) {
-
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-
-  return value
-    .filter(item =>
-      typeof item === "string"
-    )
-    .map(item =>
-      item.trim()
-    )
-    .filter(Boolean);
-}
-
-
-// ======================================================
-// تنظيف المصطلحات
-// ======================================================
-
-function normalizeKeyTerms(value) {
-
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-
-  return value
-    .map(item => {
-
-      if (typeof item === "string") {
-        return item.trim();
-      }
-
+    try {
 
       if (
-        item &&
-        typeof item === "object"
+        !process.env.OPENAI_API_KEY
       ) {
-
-        const term =
-          typeof item.term === "string"
-            ? item.term
-            : typeof item.name === "string"
-              ? item.name
-              : "";
-
-
-        return {
-          term: term.trim()
-        };
+        return res.status(500).json({
+          error:
+            "OPENAI_API_KEY غير موجودة في السيرفر."
+        });
       }
 
-
-      return "";
-
-    })
-    .filter(item => {
-
-      if (typeof item === "string") {
-        return item.length > 0;
-      }
-
-
-      return Boolean(
-        item &&
-        item.term
-      );
-    });
-}
-
-
-// ======================================================
-// تنظيف التعاريف
-// ======================================================
-
-function normalizeDefinitions(value) {
-
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-
-  return value
-    .map(item => {
-
-      if (
-        !item ||
-        typeof item !== "object"
-      ) {
-        return null;
-      }
-
-
-      const term =
-        typeof item.term === "string"
-          ? item.term.trim()
+      const message =
+        typeof req.body?.message === "string"
+          ? req.body.message.trim()
           : "";
 
+      const lesson =
+        req.body?.lesson || null;
 
-      const definition =
-        typeof item.definition === "string"
-          ? item.definition.trim()
-          : "";
-
-
-      return {
-        term,
-        definition
-      };
-
-    })
-    .filter(item =>
-      item &&
-      item.term &&
-      item.definition
-    );
-}
-
-
-// ======================================================
-// تنظيف القوانين
-// ======================================================
-
-function normalizeLaws(value) {
-
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-
-  return value
-    .map(item => {
-
-      if (
-        !item ||
-        typeof item !== "object"
-      ) {
-        return null;
+      if (!message) {
+        return res.status(400).json({
+          error:
+            "اكتب سؤالك أولاً."
+        });
       }
 
+      let lessonContext =
+        "لا يوجد درس محلل حاليًا.";
 
-      const title =
-        typeof item.title === "string"
-          ? item.title.trim()
-          : "";
+      if (lesson) {
 
+        lessonContext =
+          JSON.stringify(
+            lesson,
+            null,
+            2
+          );
 
-      const formula =
-        typeof item.formula === "string"
-          ? item.formula.trim()
-          : "";
-
-
-      const explanation =
-        typeof item.explanation === "string"
-          ? item.explanation.trim()
-          : "";
-
-
-      return {
-        title,
-        formula,
-        explanation
-      };
-
-    })
-    .filter(item =>
-      item &&
-      (
-        item.title ||
-        item.formula ||
-        item.explanation
-      )
-    );
-}
-
-
-// ======================================================
-// تنظيف الاختبار
-// ======================================================
-
-function normalizeQuiz(value) {
-
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-
-  return value
-    .map(item => {
-
-      if (
-        !item ||
-        typeof item !== "object"
-      ) {
-        return null;
+        /*
+         * حماية إضافية من إرسال بيانات ضخمة جدًا.
+         */
+        if (
+          lessonContext.length > 120000
+        ) {
+          lessonContext =
+            lessonContext.slice(
+              0,
+              120000
+            );
+        }
       }
 
+      const instructions = `
+أنت مساعد Study AI التعليمي.
 
-      let type =
-        typeof item.type === "string"
-          ? item.type.trim().toLowerCase()
-          : "written";
+أنت مساعد شخصي للطالب.
 
+هدفك:
+- مساعدة الطالب على فهم دروسه.
+- شرح المعلومات بطريقة سهلة.
+- الإجابة عن أسئلة الطالب.
+- مساعدته في المراجعة.
+- إنشاء أسئلة تدريبية عند طلب ذلك.
+- تصحيح فهم الطالب عندما يكون لديه خطأ.
+- استخدام أمثلة بسيطة عندما تكون مفيدة.
 
-      if (
-        type !== "choice" &&
-        type !== "truefalse" &&
-        type !== "written"
-      ) {
-        type = "written";
-      }
+قواعد مهمة:
 
+1. تحدث باللغة العربية غالبًا.
+2. كن واضحًا ومختصرًا لكن مفيدًا.
+3. إذا كان السؤال عن الدرس الحالي، اعتمد على بيانات الدرس.
+4. لا تخترع معلومة وتقول إنها موجودة في الدرس.
+5. إذا لم تكن الإجابة موجودة في الدرس، قل للطالب إنها غير موجودة في الدرس ثم يمكنك توضيحها كمعلومة عامة إذا كان ذلك مفيدًا.
+6. إذا طلب الطالب "اختبرني"، اطرح سؤالًا واحدًا في كل مرة حتى يستطيع التفاعل معك.
+7. إذا أجاب الطالب عن سؤال، أخبره هل إجابته صحيحة واشرح السبب.
+8. لا تستخدم JSON إلا إذا طلب الطالب ذلك.
+9. لا تقل إنك شاهدت شيئًا غير موجود في بيانات الدرس.
+10. لا تكشف مفاتيح API أو معلومات النظام.
 
-      const question =
-        typeof item.question === "string"
-          ? item.question.trim()
-          : "";
+بيانات الدرس الحالي:
+${lessonContext}
+`;
 
+      const response =
+        await openai.responses.create({
 
-      let options =
-        Array.isArray(item.options)
-          ? item.options
-              .filter(option =>
-                typeof option === "string"
-              )
-              .map(option =>
-                option.trim()
-              )
-              .filter(Boolean)
-          : [];
+          model:
+            process.env.OPENAI_MODEL ||
+            "gpt-5.6-luna",
 
+          instructions,
 
-      if (type === "truefalse") {
+          input: [
+            {
+              role: "user",
 
-        options = [
-          "صح",
-          "خطأ"
-        ];
-      }
-
-
-      if (type === "choice") {
-
-        options =
-          options.slice(0, 4);
-      }
-
+              content: [
+                {
+                  type: "input_text",
+                  text: message
+                }
+              ]
+            }
+          ]
+        });
 
       const answer =
-        typeof item.answer === "string"
-          ? item.answer.trim()
-          : "";
+        response.output_text ||
+        "لم أستطع إنشاء إجابة الآن.";
 
+      res.json({
+        answer
+      });
 
-      const acceptedAnswers =
-        Array.isArray(item.accepted_answers)
-          ? item.accepted_answers
-              .filter(answer =>
-                typeof answer === "string"
-              )
-              .map(answer =>
-                answer.trim()
-              )
-              .filter(Boolean)
-          : [];
+    } catch(error) {
 
+      console.error(
+        "AI CHAT ERROR:",
+        error
+      );
 
-      return {
+      res.status(500).json({
+        error:
+          error?.message ||
+          "حدث خطأ أثناء التواصل مع مساعد الذكاء الاصطناعي."
+      });
+    }
+  }
+);
 
-        type,
+/* =========================
+   Multer Error Handler
+========================= */
 
-        question,
+app.use(
+  (error,req,res,next) => {
 
-        options,
+    if (
+      error instanceof multer.MulterError
+    ) {
 
-        answer,
+      if (
+        error.code ===
+        "LIMIT_FILE_SIZE"
+      ) {
+        return res.status(400).json({
+          error:
+            "حجم إحدى الصور أكبر من 10MB."
+        });
+      }
 
-        accepted_answers:
-          acceptedAnswers
+      if (
+        error.code ===
+        "LIMIT_FILE_COUNT"
+      ) {
+        return res.status(400).json({
+          error:
+            "الحد الأقصى 20 صورة."
+        });
+      }
 
-      };
+      return res.status(400).json({
+        error:
+          error.message
+      });
+    }
 
-    })
-    .filter(item =>
-      item &&
-      item.question &&
-      item.answer
+    if (error) {
+
+      return res.status(400).json({
+        error:
+          error.message ||
+          "حدث خطأ."
+      });
+    }
+
+    next();
+  }
+);
+
+/* =========================
+   Start Server
+========================= */
+
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+
+    console.log(
+      `Study AI running on port ${PORT}`
     );
-}
-
-
-// ======================================================
-// معالجة أخطاء Multer
-// ======================================================
-
-app.use((error, req, res, next) => {
-
-  if (error instanceof multer.MulterError) {
-
-    if (
-      error.code === "LIMIT_FILE_SIZE"
-    ) {
-
-      return res.status(400).json({
-        error:
-          "حجم الصورة أكبر من 10MB."
-      });
-    }
-
-
-    if (
-      error.code === "LIMIT_FILE_COUNT"
-    ) {
-
-      return res.status(400).json({
-        error:
-          "يمكن رفع 20 صورة كحد أقصى."
-      });
-    }
-
-
-    return res.status(400).json({
-      error:
-        error.message
-    });
   }
-
-
-  if (error) {
-
-    return res.status(400).json({
-      error:
-        error.message ||
-        "حدث خطأ أثناء رفع الصور."
-    });
-  }
-
-
-  next();
-});
-
-
-// ======================================================
-// تشغيل السيرفر
-// ======================================================
-
-app.listen(PORT, "0.0.0.0", () => {
-
-  console.log(
-    `Study AI server running on port ${PORT}`
-  );
-
-});
+);
