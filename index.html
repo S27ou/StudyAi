@@ -1420,6 +1420,125 @@
       }
     }
 
+    /* ===== New Study Features ===== */
+    .smart-tools-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+      margin:18px 0 26px;
+    }
+    .smart-card{
+      position:relative;
+      overflow:hidden;
+      border:1px solid var(--border);
+      border-radius:20px;
+      background:linear-gradient(135deg,rgba(22,140,255,.09),rgba(125,70,255,.08));
+      padding:20px;
+    }
+    .smart-card:after{
+      content:"";
+      position:absolute;
+      width:120px;height:120px;
+      left:-45px;bottom:-60px;
+      border-radius:50%;
+      background:rgba(125,70,255,.08);
+      pointer-events:none;
+    }
+    .smart-card-head{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:10px;
+    }
+    .smart-card-icon{
+      width:48px;height:48px;
+      display:grid;place-items:center;
+      border-radius:15px;
+      background:rgba(22,140,255,.12);
+      font-size:25px;
+    }
+    .smart-card h4{font-size:17px;margin:0 0 4px}
+    .smart-card p{color:var(--muted);font-size:12px;line-height:1.8;margin:0 0 15px}
+    .smart-recommend{
+      border:1px solid var(--border);
+      border-radius:15px;
+      background:rgba(0,0,0,.10);
+      padding:13px;
+      margin-bottom:13px;
+    }
+    .smart-recommend strong{display:block;font-size:14px;margin-bottom:5px}
+    .smart-recommend span{color:var(--muted);font-size:11px}
+    .feature-toolbar{
+      display:flex;gap:9px;flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+    .question-bank-list{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:11px;
+      max-height:52vh;
+      overflow:auto;
+      padding:2px;
+    }
+    .bank-question{
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:var(--card);
+      padding:14px;
+    }
+    .bank-question .q-meta{
+      display:flex;justify-content:space-between;gap:8px;
+      color:var(--muted);font-size:10px;margin-bottom:8px;
+    }
+    .bank-question h4{font-size:13px;line-height:1.7;margin:0 0 10px}
+    .bank-question button{width:100%}
+    .quiz-question-box{
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:18px;
+      background:rgba(22,140,255,.045);
+    }
+    .quiz-options{
+      display:grid;gap:9px;margin-top:14px;
+    }
+    .quiz-option{
+      width:100%;
+      text-align:right;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:var(--card);
+      color:var(--text);
+      padding:12px;
+      cursor:pointer;
+      transition:.18s;
+    }
+    .quiz-option:hover{transform:translateY(-1px);border-color:var(--primary)}
+    .quiz-option.selected{border-color:var(--primary);background:rgba(22,140,255,.10)}
+    .quiz-option.correct{border-color:#26c281;background:rgba(38,194,129,.10)}
+    .quiz-option.wrong{border-color:var(--danger);background:rgba(255,85,119,.10)}
+    .question-feedback{
+      margin-top:12px;
+      padding:11px 13px;
+      border-radius:12px;
+      background:rgba(120,170,255,.08);
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.8;
+      display:none;
+    }
+    .question-feedback.show{display:block}
+    .saved-badge{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      background:rgba(255,190,70,.12);
+      color:#ffc55c;
+      font-size:10px;
+    }
+    @media(max-width:800px){
+      .smart-tools-grid,.question-bank-list{grid-template-columns:1fr}
+    }
+
   </style>
 </head>
 
@@ -1472,6 +1591,16 @@
       <button onclick="openProgress()">
         <span class="nav-icon">📈</span>
         متابعة المستوى
+      </button>
+
+      <button onclick="openStudyNow()">
+        <span class="nav-icon">🧠</span>
+        ماذا أدرس الآن؟
+      </button>
+
+      <button onclick="openQuestionBank()">
+        <span class="nav-icon">🧩</span>
+        بنك الأسئلة
       </button>
 
     </nav>
@@ -1613,6 +1742,57 @@
       </div>
 
     </div>
+
+
+    <!-- Smart Study Features -->
+    <section>
+      <div class="section-title">
+        <h3>🧠 الدراسة الذكية</h3>
+        <span>اقتراحات تساعدك تبدأ فورًا</span>
+      </div>
+
+      <div class="smart-tools-grid">
+
+        <div class="smart-card">
+          <div class="smart-card-head">
+            <div class="smart-card-icon">🧠</div>
+            <div>
+              <h4>ماذا أدرس الآن؟</h4>
+              <p>اقتراح تلقائي بناءً على نشاطك وأخطائك.</p>
+            </div>
+          </div>
+
+          <div class="smart-recommend" id="homeStudyRecommendation">
+            <strong>جاري اختيار أفضل مهمة لك...</strong>
+            <span>اضغط لعرض الاقتراح الكامل.</span>
+          </div>
+
+          <button class="primary-button" onclick="openStudyNow()">
+            ابدأ الآن 🚀
+          </button>
+        </div>
+
+        <div class="smart-card">
+          <div class="smart-card-head">
+            <div class="smart-card-icon">🧩</div>
+            <div>
+              <h4>بنك الأسئلة</h4>
+              <p>أسئلة متنوعة حسب المادة والصعوبة.</p>
+            </div>
+          </div>
+
+          <div class="smart-recommend">
+            <strong id="homeBankCount">12 سؤال جاهز</strong>
+            <span>حل، تحقق من إجابتك، واحفظ الأسئلة المهمة.</span>
+          </div>
+
+          <button class="secondary-button" onclick="openQuestionBank()">
+            فتح بنك الأسئلة 📚
+          </button>
+        </div>
+
+      </div>
+    </section>
 
     <!-- Tools -->
     <section class="tools">
@@ -1948,6 +2128,87 @@
       <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:15px;">
         <button class="primary-button" onclick="refreshProgress()">🔄 تحديث</button>
         <button class="secondary-button" onclick="closeProgress()">إغلاق</button>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- What Should I Study Now -->
+  <div class="feature-overlay" id="studyNowOverlay" onclick="closeStudyNow(event)">
+    <section class="feature-panel" onclick="event.stopPropagation()">
+      <div class="feature-header">
+        <div>
+          <h2>🧠 ماذا أدرس الآن؟</h2>
+          <p>اقتراح يتغير حسب أخطائك ونشاطك الدراسي.</p>
+        </div>
+        <button class="feature-close" onclick="closeStudyNow()">✕</button>
+      </div>
+
+      <div class="smart-recommend" id="studyNowMainRecommendation">
+        <strong>جاري التحليل...</strong>
+        <span>سنختار لك الخطوة المناسبة.</span>
+      </div>
+
+      <div class="progress-note" id="studyNowReason" style="margin-bottom:15px;"></div>
+
+      <div style="display:flex;gap:9px;flex-wrap:wrap;">
+        <button class="primary-button" onclick="startRecommendedStudy()">🚀 ابدأ الدراسة</button>
+        <button class="secondary-button" onclick="generateStudyRecommendation()">🎲 اقتراح آخر</button>
+        <button class="secondary-button" onclick="openQuestionBank()">🧩 حل أسئلة</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Question Bank -->
+  <div class="feature-overlay" id="questionBankOverlay" onclick="closeQuestionBank(event)">
+    <section class="feature-panel" onclick="event.stopPropagation()">
+      <div class="feature-header">
+        <div>
+          <h2>🧩 بنك الأسئلة</h2>
+          <p>اختر المادة والصعوبة ثم ابدأ الحل.</p>
+        </div>
+        <button class="feature-close" onclick="closeQuestionBank()">✕</button>
+      </div>
+
+      <div class="feature-toolbar">
+        <select class="feature-select" id="bankSubject" onchange="renderQuestionBank()">
+          <option value="all">كل المواد</option>
+          <option value="رياضيات">رياضيات</option>
+          <option value="علوم">علوم</option>
+          <option value="إنجليزي">إنجليزي</option>
+        </select>
+
+        <select class="feature-select" id="bankDifficulty" onchange="renderQuestionBank()">
+          <option value="all">كل المستويات</option>
+          <option value="سهل">سهل</option>
+          <option value="متوسط">متوسط</option>
+          <option value="صعب">صعب</option>
+        </select>
+
+        <button class="secondary-button" onclick="showSavedQuestions()">⭐ المحفوظة</button>
+        <button class="secondary-button" onclick="resetQuestionBank()">🔄 إعادة</button>
+      </div>
+
+      <div class="question-bank-list" id="questionBankList"></div>
+    </section>
+  </div>
+
+  <!-- Solve Question -->
+  <div class="feature-overlay" id="solveQuestionOverlay" onclick="closeSolveQuestion(event)">
+    <section class="feature-panel" onclick="event.stopPropagation()">
+      <div class="feature-header">
+        <div>
+          <h2>📝 حل السؤال</h2>
+          <p id="solveQuestionMeta"></p>
+        </div>
+        <button class="feature-close" onclick="closeSolveQuestion()">✕</button>
+      </div>
+
+      <div id="solveQuestionContent"></div>
+
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;">
+        <button class="primary-button" id="checkAnswerButton" onclick="checkCurrentAnswer()">تحقق من الإجابة ✓</button>
+        <button class="secondary-button" onclick="nextQuestion()">السؤال التالي →</button>
       </div>
     </section>
   </div>
@@ -3607,6 +3868,306 @@
     }
 
 
+
+    /* =========================
+       Smart Study + Question Bank
+    ========================== */
+
+    const QUESTION_BANK = [
+      {id:1,subject:"رياضيات",difficulty:"سهل",question:"ما ناتج 5 × 8؟",options:["30","35","40","45"],answer:2,explain:"5 × 8 = 40."},
+      {id:2,subject:"رياضيات",difficulty:"سهل",question:"ما ناتج 36 ÷ 6؟",options:["4","5","6","7"],answer:2,explain:"36 ÷ 6 = 6."},
+      {id:3,subject:"رياضيات",difficulty:"متوسط",question:"إذا كان 2x + 4 = 10، فما قيمة x؟",options:["2","3","4","5"],answer:1,explain:"2x = 6، إذن x = 3."},
+      {id:4,subject:"رياضيات",difficulty:"صعب",question:"ما قيمة 3² + 4²؟",options:["12","20","25","49"],answer:2,explain:"9 + 16 = 25."},
+      {id:5,subject:"علوم",difficulty:"سهل",question:"ما الكوكب المعروف بالكوكب الأحمر؟",options:["الأرض","المريخ","المشتري","الزهرة"],answer:1,explain:"المريخ يبدو أحمر بسبب أكاسيد الحديد على سطحه."},
+      {id:6,subject:"علوم",difficulty:"متوسط",question:"ما العملية التي تصنع فيها النباتات غذاءها؟",options:["التنفس","الهضم","البناء الضوئي","التبخر"],answer:2,explain:"النباتات تستخدم الضوء لصنع الغذاء في عملية البناء الضوئي."},
+      {id:7,subject:"علوم",difficulty:"صعب",question:"ما الوحدة الأساسية لقياس القوة في النظام الدولي؟",options:["جول","واط","نيوتن","باسكال"],answer:2,explain:"القوة تقاس بالنيوتن (N)."},
+      {id:8,subject:"إنجليزي",difficulty:"سهل",question:"Choose the correct word: I ___ a student.",options:["am","is","are","be"],answer:0,explain:"مع I نستخدم am."},
+      {id:9,subject:"إنجليزي",difficulty:"سهل",question:"What is the opposite of 'big'?",options:["tall","small","fast","long"],answer:1,explain:"عكس big هو small."},
+      {id:10,subject:"إنجليزي",difficulty:"متوسط",question:"Choose the correct sentence.",options:["She go to school.","She goes to school.","She going school.","She gone to school."],answer:1,explain:"مع she في المضارع البسيط نضيف s للفعل: goes."},
+      {id:11,subject:"إنجليزي",difficulty:"متوسط",question:"What does 'usually' mean?",options:["عادةً","أبدًا","نادرًا","غدًا"],answer:0,explain:"usually تعني عادةً."},
+      {id:12,subject:"رياضيات",difficulty:"متوسط",question:"ما محيط مربع طول ضلعه 6 سم؟",options:["12 سم","18 سم","24 سم","36 سم"],answer:2,explain:"محيط المربع = 4 × طول الضلع = 24 سم."}
+    ];
+
+    let currentQuestionId = null;
+    let currentQuestionAnswer = null;
+    let bankSavedOnly = false;
+
+    function getQuestionStats() {
+      try {
+        return JSON.parse(localStorage.getItem("studyAI_questionStats") || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function saveQuestionStats(stats) {
+      localStorage.setItem("studyAI_questionStats", JSON.stringify(stats));
+    }
+
+    function getSavedQuestions() {
+      try {
+        return JSON.parse(localStorage.getItem("studyAI_savedQuestions") || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveSavedQuestions(ids) {
+      localStorage.setItem("studyAI_savedQuestions", JSON.stringify(ids));
+    }
+
+    function openStudyNow() {
+      $("studyNowOverlay").classList.add("open");
+      generateStudyRecommendation();
+      $("sidebar").classList.remove("open");
+    }
+
+    function closeStudyNow(event) {
+      if (event && event.target !== $("studyNowOverlay")) return;
+      $("studyNowOverlay").classList.remove("open");
+    }
+
+    function generateStudyRecommendation() {
+      const stats = getQuestionStats();
+      const plan = getStudyPlan ? getStudyPlan() : [];
+
+      let candidate = null;
+      let reason = "";
+
+      // 1) أعلى مادة فيها أخطاء.
+      const wrongBySubject = {};
+      Object.values(stats).forEach(s => {
+        if (s.wrong > 0) {
+          wrongBySubject[s.subject] = (wrongBySubject[s.subject] || 0) + s.wrong;
+        }
+      });
+
+      const weakest = Object.entries(wrongBySubject).sort((a,b) => b[1]-a[1])[0];
+
+      if (weakest) {
+        candidate = QUESTION_BANK.find(q => q.subject === weakest[0] && q.difficulty === "متوسط")
+          || QUESTION_BANK.find(q => q.subject === weakest[0]);
+        reason = `لديك ${weakest[1]} إجابة خاطئة مسجلة في ${weakest[0]}، لذلك المراجعة هنا مفيدة الآن.`;
+      }
+
+      // 2) أول مهمة من خطة المذاكرة إذا لم توجد أخطاء.
+      if (!candidate && plan.length) {
+        const task = plan[0];
+        candidate = QUESTION_BANK.find(q => q.subject === task.subject.split(" ")[0])
+          || QUESTION_BANK[0];
+        reason = `لديك مهمة في خطة المذاكرة: ${task.subject} لمدة ${task.minutes} دقيقة.`;
+      }
+
+      // 3) اقتراح افتراضي.
+      if (!candidate) {
+        candidate = QUESTION_BANK[Math.floor(Math.random() * QUESTION_BANK.length)];
+        reason = "لا توجد بيانات كافية بعد، لذلك اخترنا لك سؤالًا مناسبًا كبداية.";
+      }
+
+      const title = `${candidate.subject} — ${candidate.question}`;
+      $("studyNowMainRecommendation").innerHTML =
+        `<strong>🎯 ${escapeHtml(title)}</strong><span>المستوى: ${escapeHtml(candidate.difficulty)} · سؤال من بنك الأسئلة</span>`;
+      $("studyNowReason").textContent = reason;
+
+      const home = $("homeStudyRecommendation");
+      if (home) {
+        home.innerHTML =
+          `<strong>🎯 ${escapeHtml(candidate.subject)} — ${escapeHtml(candidate.difficulty)}</strong><span>${escapeHtml(candidate.question)}</span>`;
+      }
+
+      localStorage.setItem("studyAI_recommendedQuestion", String(candidate.id));
+      return candidate;
+    }
+
+    function startRecommendedStudy() {
+      const id = Number(localStorage.getItem("studyAI_recommendedQuestion") || 1);
+      closeStudyNow();
+      openSolveQuestion(id);
+    }
+
+    function openQuestionBank() {
+      $("questionBankOverlay").classList.add("open");
+      bankSavedOnly = false;
+      renderQuestionBank();
+      $("sidebar").classList.remove("open");
+    }
+
+    function closeQuestionBank(event) {
+      if (event && event.target !== $("questionBankOverlay")) return;
+      $("questionBankOverlay").classList.remove("open");
+    }
+
+    function showSavedQuestions() {
+      bankSavedOnly = true;
+      renderQuestionBank();
+    }
+
+    function resetQuestionBank() {
+      bankSavedOnly = false;
+      $("bankSubject").value = "all";
+      $("bankDifficulty").value = "all";
+      renderQuestionBank();
+    }
+
+    function renderQuestionBank() {
+      const list = $("questionBankList");
+      if (!list) return;
+
+      const subject = $("bankSubject").value;
+      const difficulty = $("bankDifficulty").value;
+      const saved = getSavedQuestions();
+
+      let questions = QUESTION_BANK.filter(q =>
+        (subject === "all" || q.subject === subject) &&
+        (difficulty === "all" || q.difficulty === difficulty) &&
+        (!bankSavedOnly || saved.includes(q.id))
+      );
+
+      if (!questions.length) {
+        list.innerHTML = `<div class="empty-plan" style="grid-column:1/-1;">لا توجد أسئلة مطابقة. جرّب تغيير الفلاتر.</div>`;
+        return;
+      }
+
+      list.innerHTML = questions.map(q => {
+        const isSaved = saved.includes(q.id);
+        return `
+          <article class="bank-question">
+            <div class="q-meta">
+              <span>${escapeHtml(q.subject)} · ${escapeHtml(q.difficulty)}</span>
+              ${isSaved ? '<span class="saved-badge">⭐ محفوظ</span>' : ''}
+            </div>
+            <h4>${escapeHtml(q.question)}</h4>
+            <button class="secondary-button" onclick="openSolveQuestion(${q.id})">حل السؤال →</button>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function openSolveQuestion(id) {
+      const q = QUESTION_BANK.find(item => item.id === Number(id));
+      if (!q) return;
+
+      currentQuestionId = q.id;
+      currentQuestionAnswer = null;
+
+      $("questionBankOverlay").classList.remove("open");
+      $("solveQuestionOverlay").classList.add("open");
+      $("solveQuestionMeta").textContent = `${q.subject} · ${q.difficulty}`;
+
+      const saved = getSavedQuestions();
+      const isSaved = saved.includes(q.id);
+
+      $("solveQuestionContent").innerHTML = `
+        <div class="quiz-question-box">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+            <strong>${escapeHtml(q.question)}</strong>
+            <button class="secondary-button" onclick="toggleSaveQuestion(${q.id})">
+              ${isSaved ? "⭐ محفوظ" : "☆ حفظ"}
+            </button>
+          </div>
+
+          <div class="quiz-options">
+            ${q.options.map((option,index) => `
+              <button class="quiz-option" data-option-index="${index}" onclick="selectQuestionOption(${index})">
+                ${escapeHtml(option)}
+              </button>
+            `).join("")}
+          </div>
+
+          <div class="question-feedback" id="questionFeedback"></div>
+        </div>
+      `;
+
+      $("checkAnswerButton").disabled = false;
+    }
+
+    function selectQuestionOption(index) {
+      currentQuestionAnswer = Number(index);
+      document.querySelectorAll("#solveQuestionContent .quiz-option").forEach(btn => {
+        btn.classList.remove("selected");
+      });
+      const selected = document.querySelector(`#solveQuestionContent .quiz-option[data-option-index="${index}"]`);
+      if (selected) selected.classList.add("selected");
+    }
+
+    function checkCurrentAnswer() {
+      const q = QUESTION_BANK.find(item => item.id === currentQuestionId);
+      if (!q) return;
+
+      if (currentQuestionAnswer === null) {
+        showToast("اختر إجابة أولًا ✍️");
+        return;
+      }
+
+      const stats = getQuestionStats();
+      const key = String(q.id);
+
+      if (!stats[key]) {
+        stats[key] = {subject:q.subject, correct:0, wrong:0};
+      }
+
+      const buttons = document.querySelectorAll("#solveQuestionContent .quiz-option");
+      buttons.forEach((btn, index) => {
+        btn.classList.remove("correct","wrong");
+        if (index === q.answer) btn.classList.add("correct");
+        if (index === currentQuestionAnswer && index !== q.answer) btn.classList.add("wrong");
+      });
+
+      const feedback = $("questionFeedback");
+      feedback.classList.add("show");
+
+      if (currentQuestionAnswer === q.answer) {
+        stats[key].correct++;
+        feedback.textContent = `✅ إجابة صحيحة! ${q.explain}`;
+        showToast("إجابة صحيحة 🔥");
+      } else {
+        stats[key].wrong++;
+        feedback.textContent = `❌ ليست الإجابة الصحيحة. ${q.explain}`;
+        showToast("راجع الشرح وحاول مرة ثانية 📚");
+      }
+
+      saveQuestionStats(stats);
+      localStorage.setItem("studyAI_lastQuestionSubject", q.subject);
+      generateStudyRecommendation();
+      $("checkAnswerButton").disabled = true;
+    }
+
+    function nextQuestion() {
+      const index = QUESTION_BANK.findIndex(q => q.id === currentQuestionId);
+      const next = QUESTION_BANK[(index + 1) % QUESTION_BANK.length];
+      openSolveQuestion(next.id);
+    }
+
+    function toggleSaveQuestion(id) {
+      let saved = getSavedQuestions();
+      if (saved.includes(id)) {
+        saved = saved.filter(x => x !== id);
+        showToast("تمت إزالة السؤال من المحفوظات.");
+      } else {
+        saved.push(id);
+        showToast("تم حفظ السؤال ⭐");
+      }
+      saveSavedQuestions(saved);
+      if ($("solveQuestionOverlay").classList.contains("open")) {
+        openSolveQuestion(id);
+      }
+      renderQuestionBank();
+    }
+
+    function closeSolveQuestion(event) {
+      if (event && event.target !== $("solveQuestionOverlay")) return;
+      $("solveQuestionOverlay").classList.remove("open");
+    }
+
+    function updateSmartHome() {
+      generateStudyRecommendation();
+      const count = QUESTION_BANK.length;
+      if ($("homeBankCount")) {
+        $("homeBankCount").textContent = `${count} سؤال جاهز`;
+      }
+    }
+
+
     /* =========================
        Escape
     ========================== */
@@ -3635,6 +4196,7 @@
       () => {
         loadAppearance();
         loadStats();
+        updateSmartHome();
       }
     );
   </script>
