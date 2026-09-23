@@ -330,7 +330,7 @@ async function callGemini({
           "x-goog-api-key": GEMINI_API_KEY,
 
           // Explicitly use the current Interactions schema.
-          "Api-Revision": "2026-05-07",
+          "Api-Revision": "2026-05-20",
         },
 
         body: JSON.stringify(body),
