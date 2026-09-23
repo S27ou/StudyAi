@@ -4,167 +4,116 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ======================================================
-// Study AI - Server
+// =====================================================
+// STUDY AI - SERVER
 // Gemini Interactions API
-// Automatic model fallback system
-// ======================================================
+// =====================================================
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Render gives PORT automatically.
-// Local development uses 3001.
+// =====================================================
+// SETTINGS
+// =====================================================
+
 const PORT = process.env.PORT || 3001;
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
 
-// ======================================================
-// Models
-// ======================================================
-
-// Primary model comes from .env.
-// If it fails because of temporary overload,
-// the server automatically tries the fallback models.
-//
-// Example:
-// GEMINI_MODEL=gemini-3.6-flash
-
-const PRIMARY_MODEL =
+const GEMINI_MODEL =
   process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash";
 
-// You can change this list later without changing the code
-// by using GEMINI_FALLBACK_MODELS in Render Environment.
-//
-// Default fallback order:
-const DEFAULT_FALLBACK_MODELS = [
-  "gemini-3.5-flash-lite",
-  "gemini-3.1-flash-lite",
-  "gemini-3.5-flash",
-  "gemini-3.7-flash"
-];
+const FALLBACK_MODELS = (
+  process.env.GEMINI_FALLBACK_MODELS ||
+  "gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.5-flash,gemini-3.7-flash"
+)
+  .split(",")
+  .map((x) => x.trim())
+  .filter(Boolean);
 
-const ENV_FALLBACK_MODELS = process.env.GEMINI_FALLBACK_MODELS
-  ? process.env.GEMINI_FALLBACK_MODELS
-      .split(",")
-      .map((m) => m.trim())
-      .filter(Boolean)
-  : DEFAULT_FALLBACK_MODELS;
-
-const MODEL_LIST = [
-  PRIMARY_MODEL,
-  ...ENV_FALLBACK_MODELS
-].filter(
-  (model, index, arr) =>
-    model && arr.indexOf(model) === index
-);
-
-// Gemini Interactions API
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/interactions";
 
-// ======================================================
-// Express
-// ======================================================
+// =====================================================
+// EXPRESS
+// =====================================================
 
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 
-// Serve frontend
+// Serve website files
 app.use(express.static(__dirname));
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
-
-// ======================================================
-// Upload settings
-// ======================================================
+// =====================================================
+// MULTER
+// =====================================================
 
 const upload = multer({
   storage: multer.memoryStorage(),
 
   limits: {
     files: 20,
-    fileSize: 8 * 1024 * 1024
+    fileSize: 8 * 1024 * 1024,
   },
 
   fileFilter: (req, file, cb) => {
     if (file.mimetype?.startsWith("image/")) {
       cb(null, true);
     } else {
-      cb(new Error("Only image files are allowed."));
+      cb(new Error("يسمح برفع الصور فقط."));
     }
-  }
+  },
 });
 
-// ======================================================
-// Health
-// ======================================================
+// =====================================================
+// HOME
+// =====================================================
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// =====================================================
+// HEALTH
+// =====================================================
 
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
     server: "Study AI",
     gemini: !!GEMINI_API_KEY,
-    primaryModel: PRIMARY_MODEL,
-    fallbackModels: ENV_FALLBACK_MODELS
+    model: GEMINI_MODEL,
+    fallbackModels: FALLBACK_MODELS,
+    port: PORT,
   });
 });
 
-// ======================================================
-// Helpers
-// ======================================================
+// =====================================================
+// HELPERS
+// =====================================================
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function isRetryableStatus(status) {
-  return (
-    status === 408 ||
-    status === 429 ||
-    status === 500 ||
-    status === 502 ||
-    status === 503 ||
-    status === 504
-  );
-}
-
-function isModelProblem(status, bodyText = "") {
-  const text = bodyText.toLowerCase();
-
-  return (
-    status === 404 ||
-    text.includes("model_not_found") ||
-    text.includes("model is not found") ||
-    text.includes("not available to new users") ||
-    text.includes("is no longer available")
-  );
-}
-
-function cleanText(text) {
-  if (typeof text !== "string") return "";
-
-  return text
-    .replace(/\r/g, "")
-    .trim();
-}
-
-// ======================================================
-// Extract text from Interactions API response
-// ======================================================
+// -----------------------------------------------------
+// Get text from Gemini Interactions response
+// Supports:
+// - output_text
+// - steps
+// - outputs
+// -----------------------------------------------------
 
 function getGeminiText(result) {
   if (!result || typeof result !== "object") {
     return "";
   }
 
-  // ------------------------------------------
+  // -----------------------------------------------
   // 1. output_text
-  // ------------------------------------------
+  // -----------------------------------------------
 
   if (
     typeof result.output_text === "string" &&
@@ -173,81 +122,75 @@ function getGeminiText(result) {
     return result.output_text.trim();
   }
 
-  // ------------------------------------------
-  // 2. outputs
-  // ------------------------------------------
-
-  if (Array.isArray(result.outputs)) {
-    const texts = [];
-
-    for (const output of result.outputs) {
-      if (!output) continue;
-
-      if (
-        output.type === "text" &&
-        typeof output.text === "string"
-      ) {
-        texts.push(output.text);
-      }
-
-      if (Array.isArray(output.content)) {
-        for (const item of output.content) {
-          if (
-            item?.type === "text" &&
-            typeof item.text === "string"
-          ) {
-            texts.push(item.text);
-          }
-        }
-      }
-    }
-
-    const joined = texts.join("\n").trim();
-
-    if (joined) {
-      return joined;
-    }
-  }
-
-  // ------------------------------------------
-  // 3. steps
-  // ------------------------------------------
+  // -----------------------------------------------
+  // 2. New Interactions API -> steps
+  // -----------------------------------------------
 
   if (Array.isArray(result.steps)) {
     const texts = [];
 
     for (const step of result.steps) {
-      if (!step) continue;
+      if (!step || typeof step !== "object") continue;
 
-      // step.text
+      // Only model output is important
       if (
-        typeof step.text === "string" &&
-        step.text.trim()
+        step.type === "model_output" ||
+        step.type === "text" ||
+        !step.type
       ) {
-        texts.push(step.text);
-      }
+        if (typeof step.text === "string") {
+          texts.push(step.text);
+        }
 
-      // model_output content
-      if (
-        step.type === "model_output" &&
-        Array.isArray(step.content)
-      ) {
-        for (const item of step.content) {
-          if (
-            item?.type === "text" &&
-            typeof item.text === "string"
-          ) {
-            texts.push(item.text);
+        if (typeof step.output_text === "string") {
+          texts.push(step.output_text);
+        }
+
+        if (Array.isArray(step.content)) {
+          for (const item of step.content) {
+            if (
+              item &&
+              typeof item.text === "string" &&
+              item.text.trim()
+            ) {
+              texts.push(item.text);
+            }
           }
         }
       }
+    }
 
-      // generic content
-      if (Array.isArray(step.content)) {
-        for (const item of step.content) {
+    const text = texts.join("\n").trim();
+
+    if (text) {
+      return text;
+    }
+  }
+
+  // -----------------------------------------------
+  // 3. Legacy -> outputs
+  // -----------------------------------------------
+
+  if (Array.isArray(result.outputs)) {
+    const texts = [];
+
+    for (const output of result.outputs) {
+      if (!output || typeof output !== "object") continue;
+
+      if (typeof output.text === "string") {
+        texts.push(output.text);
+      }
+
+      if (typeof output.output_text === "string") {
+        texts.push(output.output_text);
+      }
+
+      if (Array.isArray(output.content)) {
+        for (const item of output.content) {
           if (
-            item?.type === "text" &&
-            typeof item.text === "string"
+            item &&
+            typeof item.text === "string" &&
+            item.text.trim()
           ) {
             texts.push(item.text);
           }
@@ -255,465 +198,447 @@ function getGeminiText(result) {
       }
     }
 
-    const joined = texts.join("\n").trim();
+    const text = texts.join("\n").trim();
 
-    if (joined) {
-      return joined;
+    if (text) {
+      return text;
     }
   }
 
   return "";
 }
 
-// ======================================================
+// =====================================================
 // Parse JSON returned by Gemini
-// ======================================================
+// =====================================================
 
 function parseGeminiJSON(text) {
-  if (!text) {
-    throw new Error("Gemini returned an empty response.");
+  if (!text || typeof text !== "string") {
+    throw new Error("Gemini returned empty text.");
   }
 
   let cleaned = text.trim();
 
-  // Remove markdown code fences
+  // Remove Markdown code fences
   cleaned = cleaned
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
 
-  // First direct JSON attempt
+  // -----------------------------------------------
+  // Direct JSON
+  // -----------------------------------------------
+
   try {
     return JSON.parse(cleaned);
-  } catch {
-    // Continue below
-  }
+  } catch {}
 
-  // Find first object
-  const firstObject = cleaned.indexOf("{");
-  const lastObject = cleaned.lastIndexOf("}");
+  // -----------------------------------------------
+  // Find first JSON object
+  // -----------------------------------------------
 
-  if (firstObject !== -1 && lastObject > firstObject) {
-    const possibleJSON = cleaned
-      .slice(firstObject, lastObject + 1)
-      .trim();
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
 
-    try {
-      return JSON.parse(possibleJSON);
-    } catch {
-      // Continue
-    }
-  }
-
-  // Find first array
-  const firstArray = cleaned.indexOf("[");
-  const lastArray = cleaned.lastIndexOf("]");
-
-  if (firstArray !== -1 && lastArray > firstArray) {
-    const possibleJSON = cleaned
-      .slice(firstArray, lastArray + 1)
-      .trim();
+  if (start !== -1 && end !== -1 && end > start) {
+    const jsonText = cleaned.slice(start, end + 1);
 
     try {
-      return JSON.parse(possibleJSON);
-    } catch {
-      // Continue
+      return JSON.parse(jsonText);
+    } catch (error) {
+      console.error("JSON parse failed:");
+      console.error(error.message);
+      console.error(jsonText.slice(0, 5000));
     }
   }
 
   throw new Error(
-    "Gemini returned text, but it was not valid JSON."
+    "Gemini returned text, but it was not valid JSON:\n" +
+      cleaned.slice(0, 3000)
   );
 }
 
-// ======================================================
-// Request Gemini
-// ======================================================
+// =====================================================
+// Fetch with timeout
+// =====================================================
 
-async function requestGemini({
-  model,
-  input,
-  systemInstruction,
-  responseFormat = null,
-  timeoutMs = 120000
-}) {
-  if (!GEMINI_API_KEY) {
-    throw new Error(
-      "GEMINI_API_KEY is missing from environment variables."
-    );
-  }
-
+async function fetchWithTimeout(url, options, timeoutMs = 120000) {
   const controller = new AbortController();
 
-  const timeout = setTimeout(() => {
+  const timer = setTimeout(() => {
     controller.abort();
   }, timeoutMs);
 
   try {
-    const body = {
-      model,
-      input,
-      store: false
-    };
-
-    if (systemInstruction) {
-      body.system_instruction = systemInstruction;
-    }
-
-    if (responseFormat) {
-      body.response_format = responseFormat;
-    }
-
-    console.log("");
-    console.log("======================================");
-    console.log("Gemini request");
-    console.log("Model:", model);
-    console.log("======================================");
-
-    const response = await fetch(GEMINI_URL, {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY
-      },
-
-      body: JSON.stringify(body),
-
-      signal: controller.signal
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
     });
-
-    const rawText = await response.text();
-
-    let result;
-
-    try {
-      result = JSON.parse(rawText);
-    } catch {
-      result = {
-        rawText
-      };
-    }
-
-    console.log("Gemini HTTP status:", response.status);
-
-    // ------------------------------------------
-    // Error
-    // ------------------------------------------
-
-    if (!response.ok) {
-      const errorMessage =
-        result?.error?.message ||
-        result?.message ||
-        rawText ||
-        "Unknown Gemini error";
-
-      console.log(
-        "Gemini error:",
-        errorMessage
-      );
-
-      const error = new Error(errorMessage);
-
-      error.status = response.status;
-      error.body = result;
-
-      throw error;
-    }
-
-    // ------------------------------------------
-    // Successful response
-    // ------------------------------------------
-
-    const text = getGeminiText(result);
-
-    console.log(
-      "Gemini response text length:",
-      text.length
-    );
-
-    if (!text) {
-      console.log(
-        "Gemini returned no text."
-      );
-
-      console.log(
-        "Full Gemini response:",
-        JSON.stringify(result, null, 2)
-      );
-
-      const error = new Error(
-        "Gemini returned an empty response."
-      );
-
-      error.status = 500;
-      error.body = result;
-
-      throw error;
-    }
-
-    return {
-      text,
-      result,
-      interactionId: result?.id || null
-    };
-
-  } catch (error) {
-    if (error.name === "AbortError") {
-      const timeoutError = new Error(
-        "Gemini request timed out."
-      );
-
-      timeoutError.status = 504;
-
-      throw timeoutError;
-    }
-
-    throw error;
-
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(timer);
   }
 }
 
-// ======================================================
-// Automatic model fallback
-// ======================================================
+// =====================================================
+// Gemini API call
+// =====================================================
 
-async function callGeminiWithFallback(options) {
-  let lastError = null;
+async function callGemini({
+  model,
+  input,
+  systemInstruction = "",
+  responseFormat = null,
+  timeoutMs = 120000,
+}) {
+  if (!GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY غير موجود. أضفه في Environment Variables."
+    );
+  }
+
+  const body = {
+    model,
+    input,
+    store: false,
+  };
+
+  if (systemInstruction) {
+    body.system_instruction = systemInstruction;
+  }
+
+  if (responseFormat) {
+    body.response_format = responseFormat;
+  }
 
   console.log("");
   console.log("======================================");
-  console.log("MODEL FALLBACK SYSTEM");
-  console.log("Models:");
-  console.log(MODEL_LIST.join(" -> "));
+  console.log("Gemini request");
+  console.log("Model:", model);
   console.log("======================================");
 
-  for (let modelIndex = 0; modelIndex < MODEL_LIST.length; modelIndex++) {
-    const model = MODEL_LIST[modelIndex];
+  let response;
+
+  try {
+    response = await fetchWithTimeout(
+      GEMINI_URL,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": GEMINI_API_KEY,
+
+          // Explicitly use the current Interactions schema.
+          "Api-Revision": "2026-05-07",
+        },
+
+        body: JSON.stringify(body),
+      },
+      timeoutMs
+    );
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(
+        `Gemini request timed out after ${timeoutMs / 1000} seconds.`
+      );
+    }
+
+    throw error;
+  }
+
+  const raw = await response.text();
+
+  let result;
+
+  try {
+    result = JSON.parse(raw);
+  } catch {
+    result = {
+      raw,
+    };
+  }
+
+  console.log("Gemini HTTP:", response.status);
+  console.log("Gemini status:", result?.status || "unknown");
+
+  // -----------------------------------------------
+  // API ERROR
+  // -----------------------------------------------
+
+  if (!response.ok) {
+    const message =
+      result?.error?.message ||
+      result?.message ||
+      raw ||
+      `Gemini HTTP ${response.status}`;
+
+    const error = new Error(message);
+
+    error.status = response.status;
+    error.gemini = result;
+
+    throw error;
+  }
+
+  // -----------------------------------------------
+  // Extract text
+  // -----------------------------------------------
+
+  const text = getGeminiText(result);
+
+  console.log("Gemini text length:", text.length);
+
+  if (!text) {
+    console.log("Gemini returned no readable text.");
+    console.log(
+      JSON.stringify(result, null, 2).slice(0, 15000)
+    );
+
+    throw new Error(
+      "تمت استجابة Gemini ولكن لم أستطع استخراج النص من الاستجابة."
+    );
+  }
+
+  console.log("Gemini response received successfully.");
+
+  return {
+    text,
+    result,
+    interactionId: result?.id || null,
+    status: result?.status || "completed",
+    model,
+  };
+}
+
+// =====================================================
+// Error classification
+// =====================================================
+
+function shouldTryAnotherModel(error) {
+  const status = Number(error?.status || 0);
+
+  // Authentication / billing errors
+  if (
+    status === 400 ||
+    status === 401 ||
+    status === 402 ||
+    status === 403
+  ) {
+    return false;
+  }
+
+  // Temporary / overloaded / unavailable
+  if (
+    status === 408 ||
+    status === 429 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  ) {
+    return true;
+  }
+
+  const message = String(error?.message || "").toLowerCase();
+
+  if (
+    message.includes("high demand") ||
+    message.includes("temporarily") ||
+    message.includes("overloaded") ||
+    message.includes("unavailable") ||
+    message.includes("not available to new users") ||
+    message.includes("no longer available")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+// =====================================================
+// Call Gemini with automatic model fallback
+// =====================================================
+
+async function callGeminiWithFallback(options) {
+  const models = [
+    options.model || GEMINI_MODEL,
+    ...FALLBACK_MODELS,
+  ].filter(Boolean);
+
+  // Remove duplicates
+  const uniqueModels = [...new Set(models)];
+
+  let lastError = null;
+
+  for (let i = 0; i < uniqueModels.length; i++) {
+    const model = uniqueModels[i];
 
     console.log("");
     console.log(
-      `Trying model ${modelIndex + 1}/${MODEL_LIST.length}: ${model}`
+      `Trying Gemini model ${i + 1}/${uniqueModels.length}: ${model}`
     );
 
-    // ------------------------------------------
-    // Try this model
-    // ------------------------------------------
+    try {
+      const result = await callGemini({
+        ...options,
+        model,
+      });
 
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const result = await requestGemini({
-          ...options,
-          model
-        });
+      return result;
+    } catch (error) {
+      lastError = error;
 
-        console.log(
-          `SUCCESS: ${model}`
-        );
-
-        return {
-          ...result,
-          modelUsed: model
-        };
-
-      } catch (error) {
-        lastError = error;
-
-        const status = error?.status;
-
-        console.log(
-          `FAILED: ${model} | attempt ${attempt} | status ${status || "unknown"}`
-        );
-
-        // --------------------------------------
-        // Authentication / permission errors
-        // Don't keep retrying the same key.
-        // --------------------------------------
-
-        if (
-          status === 401 ||
-          status === 403
-        ) {
-          throw error;
-        }
-
-        // --------------------------------------
-        // Payment / quota errors
-        // Fallback models won't necessarily
-        // fix an account-level quota problem.
-        // --------------------------------------
-
-        if (status === 402) {
-          throw error;
-        }
-
-        // --------------------------------------
-        // Model unavailable
-        // Immediately try next model.
-        // --------------------------------------
-
-        if (
-          isModelProblem(
-            status,
-            error?.message || ""
-          )
-        ) {
-          console.log(
-            `Model unavailable: ${model}`
-          );
-
-          break;
-        }
-
-        // --------------------------------------
-        // Temporary server overload
-        // Retry once with backoff.
-        // --------------------------------------
-
-        if (
-          isRetryableStatus(status) &&
-          attempt === 1
-        ) {
-          const delay = 1500;
-
-          console.log(
-            `Temporary error. Retrying ${model} after ${delay}ms...`
-          );
-
-          await sleep(delay);
-
-          continue;
-        }
-
-        // --------------------------------------
-        // Other errors
-        // Try next model.
-        // --------------------------------------
-
-        break;
-      }
-    }
-
-    // ------------------------------------------
-    // Move to next model
-    // ------------------------------------------
-
-    if (modelIndex < MODEL_LIST.length - 1) {
-      console.log(
-        `Switching from ${model} to ${MODEL_LIST[modelIndex + 1]}...`
+      console.error(
+        `Model failed: ${model}`
       );
 
-      // Small delay to avoid hammering API
-      await sleep(700);
+      console.error(
+        error?.message || error
+      );
+
+      // If this isn't a temporary/model availability
+      // problem, stop immediately.
+      if (!shouldTryAnotherModel(error)) {
+        throw error;
+      }
+
+      // Small delay before switching model
+      if (i < uniqueModels.length - 1) {
+        await sleep(700);
+      }
     }
   }
 
-  throw lastError || new Error(
-    "All Gemini models failed."
-  );
+  throw lastError || new Error("All Gemini models failed.");
 }
 
-// ======================================================
-// Lesson schema
-// ======================================================
+// =====================================================
+// LESSON SCHEMA
+// =====================================================
 
 const lessonSchema = {
   type: "object",
 
   properties: {
     title: {
-      type: "string"
+      type: "string",
+      description: "عنوان الدرس",
     },
 
     summary: {
-      type: "string"
+      type: "string",
+      description: "ملخص واضح ومختصر للدرس باللغة العربية",
     },
 
     explanation: {
-      type: "string"
+      type: "string",
+      description:
+        "شرح مبسط جدًا يساعد الطالب على فهم الدرس باللغة العربية",
     },
 
     important_points: {
       type: "array",
+
       items: {
-        type: "string"
-      }
+        type: "string",
+      },
+
+      description: "أهم النقاط الموجودة في الدرس",
     },
 
     key_terms: {
       type: "array",
+
       items: {
-        type: "string"
-      }
+        type: "string",
+      },
+
+      description: "المصطلحات المهمة الموجودة في الدرس",
     },
 
     definitions: {
       type: "array",
+
       items: {
         type: "object",
+
         properties: {
           term: {
-            type: "string"
+            type: "string",
           },
+
           definition: {
-            type: "string"
-          }
+            type: "string",
+          },
         },
+
         required: [
           "term",
-          "definition"
-        ]
-      }
+          "definition",
+        ],
+      },
+
+      description:
+        "التعاريف الموجودة في الدرس فقط",
     },
 
     laws: {
       type: "array",
+
       items: {
-        type: "string"
-      }
+        type: "string",
+      },
+
+      description:
+        "القوانين والمعادلات الموجودة في الدرس فقط",
     },
 
     quiz: {
       type: "array",
+
       items: {
         type: "object",
+
         properties: {
-          type: {
-            type: "string"
+          question: {
+            type: "string",
           },
 
-          question: {
-            type: "string"
+          type: {
+            type: "string",
+
+            enum: [
+              "اختياري",
+              "صح وخطأ",
+              "كتابي",
+            ],
           },
 
           options: {
             type: "array",
+
             items: {
-              type: "string"
-            }
+              type: "string",
+            },
           },
 
           answer: {
-            type: "string"
+            type: "string",
           },
-
-          explanation: {
-            type: "string"
-          }
         },
 
         required: [
-          "type",
           "question",
+          "type",
           "options",
           "answer",
-          "explanation"
-        ]
-      }
-    }
+        ],
+      },
+
+      description:
+        "أسئلة اختبار متنوعة من محتوى الدرس",
+    },
   },
 
   required: [
@@ -724,20 +649,20 @@ const lessonSchema = {
     "key_terms",
     "definitions",
     "laws",
-    "quiz"
-  ]
+    "quiz",
+  ],
 };
 
-// ======================================================
-// Normalize analysis
-// ======================================================
+// =====================================================
+// NORMALIZE ANALYSIS DATA
+// =====================================================
 
 function normalizeAnalysis(data) {
   if (!data || typeof data !== "object") {
     data = {};
   }
 
-  return {
+  const normalized = {
     title:
       typeof data.title === "string"
         ? data.title
@@ -756,263 +681,297 @@ function normalizeAnalysis(data) {
     important_points:
       Array.isArray(data.important_points)
         ? data.important_points
-            .filter((x) => typeof x === "string")
         : [],
 
     key_terms:
       Array.isArray(data.key_terms)
         ? data.key_terms
-            .filter((x) => typeof x === "string")
         : [],
 
     definitions:
       Array.isArray(data.definitions)
         ? data.definitions
-            .filter(
-              (x) =>
-                x &&
-                typeof x === "object"
-            )
-            .map((x) => ({
-              term:
-                typeof x.term === "string"
-                  ? x.term
-                  : "",
-
-              definition:
-                typeof x.definition === "string"
-                  ? x.definition
-                  : ""
-            }))
         : [],
 
     laws:
       Array.isArray(data.laws)
         ? data.laws
-            .filter((x) => typeof x === "string")
         : [],
 
     quiz:
       Array.isArray(data.quiz)
         ? data.quiz
-            .filter(
-              (x) =>
-                x &&
-                typeof x === "object"
-            )
-            .map((q) => ({
-              type:
-                typeof q.type === "string"
-                  ? q.type
-                  : "كتابي",
-
-              question:
-                typeof q.question === "string"
-                  ? q.question
-                  : "",
-
-              options:
-                Array.isArray(q.options)
-                  ? q.options
-                      .filter(
-                        (x) =>
-                          typeof x === "string"
-                      )
-                  : [],
-
-              answer:
-                typeof q.answer === "string"
-                  ? q.answer
-                  : "",
-
-              explanation:
-                typeof q.explanation === "string"
-                  ? q.explanation
-                  : ""
-            }))
-        : []
+        : [],
   };
+
+  // Clean important points
+  normalized.important_points =
+    normalized.important_points
+      .filter((x) => typeof x === "string")
+      .map((x) => x.trim())
+      .filter(Boolean);
+
+  // Clean terms
+  normalized.key_terms =
+    normalized.key_terms
+      .filter((x) => typeof x === "string")
+      .map((x) => x.trim())
+      .filter(Boolean);
+
+  // Clean definitions
+  normalized.definitions =
+    normalized.definitions
+      .filter(
+        (x) =>
+          x &&
+          typeof x === "object"
+      )
+      .map((x) => ({
+        term:
+          typeof x.term === "string"
+            ? x.term.trim()
+            : "",
+
+        definition:
+          typeof x.definition === "string"
+            ? x.definition.trim()
+            : "",
+      }))
+      .filter(
+        (x) =>
+          x.term &&
+          x.definition
+      );
+
+  // Clean laws
+  normalized.laws =
+    normalized.laws
+      .filter((x) => typeof x === "string")
+      .map((x) => x.trim())
+      .filter(Boolean);
+
+  // Clean quiz
+  normalized.quiz =
+    normalized.quiz
+      .filter(
+        (x) =>
+          x &&
+          typeof x === "object"
+      )
+      .map((q) => ({
+        question:
+          typeof q.question === "string"
+            ? q.question.trim()
+            : "",
+
+        type:
+          typeof q.type === "string"
+            ? q.type
+            : "كتابي",
+
+        options:
+          Array.isArray(q.options)
+            ? q.options
+                .filter(
+                  (x) =>
+                    typeof x === "string"
+                )
+                .map((x) => x.trim())
+                .filter(Boolean)
+            : [],
+
+        answer:
+          typeof q.answer === "string"
+            ? q.answer.trim()
+            : "",
+      }))
+      .filter((q) => q.question);
+
+  return normalized;
 }
 
-// ======================================================
-// Analyze lesson
-// ======================================================
+// =====================================================
+// ANALYZE LESSON
+// =====================================================
 
 app.post(
   "/api/analyze",
   upload.array("images", 20),
   async (req, res) => {
+    console.log("");
+    console.log("======================================");
+    console.log("ANALYZE REQUEST");
+    console.log("======================================");
 
     try {
-      console.log("");
-      console.log("======================================");
-      console.log("ANALYZE REQUEST");
-      console.log("======================================");
-
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({
+      if (!GEMINI_API_KEY) {
+        return res.status(500).json({
           success: false,
-          error: "لم يتم رفع أي صورة."
+          error:
+            "GEMINI_API_KEY غير موجود في إعدادات السيرفر.",
         });
       }
 
-      console.log(
-        "عدد الصور:",
-        req.files.length
-      );
+      const files = req.files || [];
 
-      const totalBytes = req.files.reduce(
-        (sum, file) =>
-          sum + file.buffer.length,
-        0
-      );
+      console.log("عدد الصور:", files.length);
+
+      if (!files.length) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "لم يتم إرسال أي صورة.",
+        });
+      }
+
+      const totalMB =
+        files.reduce(
+          (sum, file) =>
+            sum + file.size,
+          0
+        ) /
+        (1024 * 1024);
 
       console.log(
         "حجم الصور:",
-        (totalBytes / 1024 / 1024).toFixed(2),
+        totalMB.toFixed(2),
         "MB"
       );
 
-      // ----------------------------------------
-      // Text instruction
-      // ----------------------------------------
+      // -----------------------------------------------
+      // Text prompt
+      // -----------------------------------------------
+
+      const prompt = `
+أنت مساعد دراسة ذكي للطلاب.
+
+سأرسل لك صورة أو عدة صور لدرس دراسي.
+
+اقرأ جميع الصور بعناية شديدة، واجمع المعلومات من جميع الصفحات قبل كتابة النتيجة.
+
+المطلوب:
+
+1. تحديد عنوان الدرس.
+2. كتابة ملخص واضح ومفيد.
+3. كتابة شرح مبسط جدًا يساعد الطالب على فهم الدرس.
+4. استخراج أهم النقاط.
+5. استخراج المصطلحات المهمة.
+6. استخراج التعاريف الموجودة في الدرس.
+7. استخراج القوانين والمعادلات الموجودة في الدرس.
+8. إنشاء اختبار حقيقي من محتوى الدرس.
+
+مهم جدًا:
+
+- اعتمد على المعلومات الموجودة في الصور فقط.
+- لا تخترع معلومات غير موجودة.
+- لا تتجاهل أي صفحة من الصور.
+- إذا كان النص موجودًا في صورة، حاول قراءته بدقة.
+- إذا كانت الصورة غير واضحة، لا تخترع النص.
+- اجعل الشرح باللغة العربية.
+- اجعل الأسئلة مثل أسئلة الاختبارات المدرسية الحقيقية.
+- لا تجعل جميع الأسئلة من نوع واحد.
+- استخدم مزيجًا من:
+  - اختياري
+  - صح وخطأ
+  - كتابي
+- أسئلة الاختيار من متعدد يجب أن تحتوي على خيارات واضحة.
+- أسئلة الصح والخطأ يجب أن يكون لها خياران مناسبين.
+- الأسئلة الكتابية لا تحتاج خيارات.
+- حاول إنشاء 10 أسئلة أو أكثر إذا كان محتوى الدرس يسمح بذلك.
+
+أريد النتيجة بصيغة JSON مطابقة تمامًا للمخطط المطلوب.
+`;
+
+      // -----------------------------------------------
+      // Build multimodal input
+      // -----------------------------------------------
 
       const input = [
         {
           type: "text",
-
-          text: `
-أنت مساعد دراسة ذكي متخصص في فهم الدروس من صور الكتب والمذكرات.
-
-حلل جميع الصور المرفقة معًا، ولا تعتمد على صورة واحدة فقط.
-
-مهم جدًا:
-- اقرأ النص الموجود في الصور بدقة.
-- لا تخترع معلومات غير موجودة في الدرس.
-- إذا كانت معلومة غير واضحة في الصور فلا تخمنها.
-- اكتب النتائج باللغة العربية.
-- اجعل الشرح واضحًا للطالب وسهل الفهم.
-- استخرج المعلومات المهمة فقط.
-- استخرج التعاريف الموجودة فعلًا.
-- استخرج القوانين والمعادلات الموجودة فعلًا.
-- أنشئ اختبارًا يشبه الاختبارات المدرسية الحقيقية.
-- لا تجعل كل الأسئلة من نوع واحد.
-
-أنواع الاختبار المطلوبة:
-1. اختيار من متعدد.
-2. صح وخطأ.
-3. أسئلة كتابية.
-
-في أسئلة الاختيار من متعدد:
-- ضع 4 خيارات عندما يكون ذلك ممكنًا.
-- اجعل السؤال طبيعيًا مثل أسئلة الاختبارات المدرسية.
-- لا تستخدم أسئلة عامة أو مصطلحات غريبة.
-
-في أسئلة صح وخطأ:
-- اجعل options فارغة أو تحتوي على ["صح","خطأ"].
-
-في الأسئلة الكتابية:
-- اجعل options فارغة.
-
-أنشئ عددًا مناسبًا من الأسئلة حسب كمية محتوى الدرس، ويفضل 10 أسئلة أو أكثر إذا كان محتوى الصور يسمح بذلك.
-
-أعد النتيجة JSON فقط وبنفس الهيكل المطلوب.
-          `.trim()
-        }
+          text: prompt,
+        },
       ];
 
-      // ----------------------------------------
-      // Add all images
-      // ----------------------------------------
-
-      for (const file of req.files) {
+      for (const file of files) {
         input.push({
           type: "image",
-
           mime_type:
-            file.mimetype || "image/jpeg",
-
-          data:
-            file.buffer.toString("base64")
+            file.mimetype ||
+            "image/jpeg",
+          data: file.buffer.toString(
+            "base64"
+          ),
         });
       }
 
-      // ----------------------------------------
+      // -----------------------------------------------
       // System instruction
-      // ----------------------------------------
+      // -----------------------------------------------
 
       const systemInstruction = `
-أنت Study AI، مساعد تعليمي باللغة العربية.
+أنت Study AI، مساعد دراسة متخصص.
 
-مهمتك تحليل صور الدرس وتحويلها إلى:
-- ملخص واضح.
-- شرح مبسط.
-- أهم النقاط.
-- المصطلحات المهمة.
-- التعاريف.
-- القوانين والمعادلات.
-- اختبار متنوع.
+وظيفتك تحليل صفحات الدروس المصورة وتحويلها إلى محتوى دراسي منظم.
 
-اعتمد على محتوى الصور فقط.
-لا تخترع معلومات غير موجودة.
-إذا لم يوجد قانون في الصور اجعل laws مصفوفة فارغة.
-إذا لم توجد تعاريف واضحة اجعل definitions مصفوفة فارغة.
+يجب أن تكون إجابتك مبنية على محتوى الصور فقط.
 
-الاختبار يجب أن يحتوي على:
-- اختيار من متعدد.
-- صح وخطأ.
-- أسئلة كتابية.
+لا تخترع معلومات.
 
-أعد JSON صالحًا فقط.
-      `.trim();
+إذا لم تجد قانونًا أو تعريفًا واضحًا، اترك القائمة فارغة.
 
-      // ----------------------------------------
-      // Gemini structured output
-      // ----------------------------------------
+إذا كان محتوى الدرس قليلًا، لا تضف معلومات من خارج الصور فقط من أجل زيادة عدد الأسئلة.
+
+اللغة المطلوبة: العربية.
+`;
+
+      // -----------------------------------------------
+      // Structured output
+      // -----------------------------------------------
 
       const responseFormat = {
         type: "text",
         mime_type: "application/json",
-        schema: lessonSchema
+        schema: lessonSchema,
       };
 
-      // ----------------------------------------
-      // Call with automatic fallback
-      // ----------------------------------------
+      // -----------------------------------------------
+      // Gemini
+      // -----------------------------------------------
 
       const result =
         await callGeminiWithFallback({
+          model: GEMINI_MODEL,
+
           input,
+
           systemInstruction,
+
           responseFormat,
-          timeoutMs: 120000
+
+          timeoutMs: 120000,
         });
 
+      // -----------------------------------------------
+      // Debug
+      // -----------------------------------------------
+
+      console.log("");
       console.log(
-        "======================================"
+        "===== GEMINI ANALYSIS TEXT ====="
       );
 
       console.log(
-        "ANALYSIS SUCCESS"
+        result.text.slice(0, 15000)
       );
 
       console.log(
-        "Model used:",
-        result.modelUsed
+        "================================"
       );
 
-      console.log(
-        "Interaction ID:",
-        result.interactionId
-      );
-
-      console.log(
-        "======================================"
-      );
-
-      // ----------------------------------------
+      // -----------------------------------------------
       // Parse JSON
-      // ----------------------------------------
+      // -----------------------------------------------
 
       let data;
 
@@ -1021,141 +980,164 @@ app.post(
           result.text
         );
       } catch (parseError) {
+        console.error(
+          "Analysis JSON parse error:"
+        );
 
         console.error(
-          "JSON parse error:",
           parseError.message
         );
 
-        console.error(
-          "Gemini text:",
-          result.text
-        );
-
-        return res.status(500).json({
+        return res.status(502).json({
           success: false,
+
           error:
             "تمت استجابة Gemini ولكن لم أستطع تحويلها إلى بيانات التحليل.",
-          modelUsed: result.modelUsed
+
+          details:
+            parseError.message,
+
+          raw:
+            result.text.slice(0, 5000),
+
+          modelUsed:
+            result.model,
+
+          interactionId:
+            result.interactionId,
         });
       }
 
+      // -----------------------------------------------
+      // Normalize
+      // -----------------------------------------------
+
       data = normalizeAnalysis(data);
 
-      // ----------------------------------------
+      console.log("");
+      console.log(
+        "Analysis completed successfully."
+      );
+
+      console.log(
+        "Summary:",
+        data.summary.length,
+        "chars"
+      );
+
+      console.log(
+        "Questions:",
+        data.quiz.length
+      );
+
+      console.log(
+        "Definitions:",
+        data.definitions.length
+      );
+
+      console.log(
+        "Laws:",
+        data.laws.length
+      );
+
+      // -----------------------------------------------
       // Return
-      // ----------------------------------------
+      // -----------------------------------------------
 
       return res.json({
         success: true,
 
         data,
 
-        // Compatibility with different frontend versions
+        // Extra compatibility fields
         analysis: data,
 
-        ...data,
+        title: data.title,
 
-        modelUsed: result.modelUsed,
+        summary:
+          data.summary,
+
+        explanation:
+          data.explanation,
+
+        important_points:
+          data.important_points,
+
+        key_terms:
+          data.key_terms,
+
+        definitions:
+          data.definitions,
+
+        laws:
+          data.laws,
+
+        quiz:
+          data.quiz,
+
+        modelUsed:
+          result.model,
 
         interactionId:
-          result.interactionId
+          result.interactionId,
       });
-
     } catch (error) {
-
       console.error("");
       console.error(
         "======================================"
       );
+
       console.error(
         "ANALYZE ERROR"
       );
+
+      console.error(
+        error?.message || error
+      );
+
       console.error(
         "======================================"
       );
 
-      console.error(
-        "Status:",
-        error?.status
-      );
+      const status =
+        Number(error?.status) || 500;
 
-      console.error(
-        "Message:",
-        error?.message
-      );
-
-      // ----------------------------------------
-      // User-friendly errors
-      // ----------------------------------------
-
-      if (error?.status === 401) {
-        return res.status(401).json({
-          success: false,
-          error:
-            "مفتاح Gemini غير صالح أو غير مصرح به في Render."
-        });
-      }
-
-      if (error?.status === 403) {
-        return res.status(403).json({
-          success: false,
-          error:
-            "مفتاح Gemini لا يملك صلاحية استخدام هذا الطلب."
-        });
-      }
-
-      if (error?.status === 402) {
-        return res.status(402).json({
-          success: false,
-          error:
-            "رصيد أو فئة الدفع في Gemini تمنع الطلب حاليًا."
-        });
-      }
-
-      if (error?.status === 429) {
-        return res.status(429).json({
-          success: false,
-          error:
-            "تم تجاوز حد الاستخدام في Gemini. حاول مرة أخرى بعد قليل."
-        });
-      }
-
-      if (error?.status === 503) {
-        return res.status(503).json({
-          success: false,
-          error:
-            "نماذج Gemini مشغولة حاليًا. تم تجربة النماذج الاحتياطية ولم تنجح."
-        });
-      }
-
-      if (error?.status === 504) {
-        return res.status(504).json({
-          success: false,
-          error:
-            "استغرق تحليل الدرس وقتًا طويلًا. حاول مرة أخرى."
-        });
-      }
-
-      return res.status(500).json({
+      return res.status(
+        status >= 400 && status < 600
+          ? status
+          : 500
+      ).json({
         success: false,
+
         error:
           error?.message ||
-          "حدث خطأ أثناء تحليل الدرس."
+          "حدث خطأ أثناء تحليل الدرس.",
       });
     }
   }
 );
 
-// ======================================================
-// Chat
-// ======================================================
+// =====================================================
+// CHAT
+// =====================================================
 
 app.post(
   "/api/chat",
   async (req, res) => {
+    console.log("");
+    console.log(
+      "CHAT REQUEST"
+    );
 
     try {
+      if (!GEMINI_API_KEY) {
+        return res.status(500).json({
+          success: false,
+          error:
+            "GEMINI_API_KEY غير موجود.",
+        });
+      }
+
       const message =
         typeof req.body?.message === "string"
           ? req.body.message.trim()
@@ -1164,116 +1146,112 @@ app.post(
       if (!message) {
         return res.status(400).json({
           success: false,
-          error: "اكتب رسالة أولًا."
+          error:
+            "اكتب رسالة أولاً.",
         });
       }
 
       const input = [
         {
           type: "text",
-          text: message
-        }
+          text: message,
+        },
       ];
 
       const systemInstruction = `
-أنت مساعد Study AI.
+أنت مساعد دراسة ذكي اسمه Study AI.
 
-تحدث باللغة العربية.
-أجب بطريقة طبيعية وواضحة ومفيدة للطالب.
-لا تستخدم JSON.
-إذا كان السؤال عن الدراسة فاشرح خطوة بخطوة.
-لا تخترع معلومات إذا لم تكن متأكدًا.
-      `.trim();
+تحدث مع الطالب باللغة العربية.
+
+أجب بطريقة واضحة ومباشرة ومفيدة.
+
+إذا كان السؤال متعلقًا بالدرس الذي أرسله الطالب، اعتمد على المعلومات المتوفرة في المحادثة أو الصور المرسلة.
+
+لا تخترع معلومات.
+`;
 
       const result =
         await callGeminiWithFallback({
+          model: GEMINI_MODEL,
+
           input,
+
           systemInstruction,
+
+          // Chat does NOT need JSON.
           responseFormat: null,
-          timeoutMs: 30000
+
+          timeoutMs: 30000,
         });
 
       return res.json({
         success: true,
 
-        answer: cleanText(
-          result.text
-        ),
+        answer:
+          result.text,
+
+        response:
+          result.text,
 
         modelUsed:
-          result.modelUsed,
+          result.model,
 
         interactionId:
-          result.interactionId
+          result.interactionId,
       });
-
     } catch (error) {
-
       console.error(
         "CHAT ERROR:",
-        error?.message
+        error?.message || error
       );
 
-      if (error?.status === 401) {
-        return res.status(401).json({
-          success: false,
-          error:
-            "مفتاح Gemini غير صالح."
-        });
-      }
+      const status =
+        Number(error?.status) || 500;
 
-      if (error?.status === 429) {
-        return res.status(429).json({
-          success: false,
-          error:
-            "Gemini مشغول أو تم تجاوز الحد مؤقتًا. حاول مرة أخرى."
-        });
-      }
-
-      if (error?.status === 503) {
-        return res.status(503).json({
-          success: false,
-          error:
-            "Gemini مشغول حاليًا. حاول مرة أخرى بعد قليل."
-        });
-      }
-
-      return res.status(500).json({
+      return res.status(
+        status >= 400 && status < 600
+          ? status
+          : 500
+      ).json({
         success: false,
+
         error:
           error?.message ||
-          "حدث خطأ في المساعد الذكي."
+          "حدث خطأ أثناء التواصل مع Gemini.",
       });
     }
   }
 );
 
-// ======================================================
-// Multer error handler
-// ======================================================
+// =====================================================
+// MULTER / GENERAL ERROR HANDLER
+// =====================================================
 
 app.use(
   (error, req, res, next) => {
+    console.error(
+      "SERVER ERROR:",
+      error?.message || error
+    );
 
-    if (error instanceof multer.MulterError) {
+    if (
+      error instanceof multer.MulterError
+    ) {
       return res.status(400).json({
         success: false,
+
         error:
-          `Upload error: ${error.message}`
+          `خطأ في رفع الملفات: ${error.message}`,
       });
     }
 
     if (error) {
-      console.error(
-        "SERVER ERROR:",
-        error
-      );
-
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
+
         error:
           error.message ||
-          "حدث خطأ في السيرفر."
+          "حدث خطأ في السيرفر.",
       });
     }
 
@@ -1281,19 +1259,18 @@ app.use(
   }
 );
 
-// ======================================================
-// Start
-// ======================================================
+// =====================================================
+// START SERVER
+// =====================================================
 
 app.listen(PORT, () => {
-
   console.log("");
   console.log(
     "======================================"
   );
 
   console.log(
-    "       STUDY AI SERVER"
+    "        STUDY AI SERVER"
   );
 
   console.log(
@@ -1307,19 +1284,12 @@ app.listen(PORT, () => {
 
   console.log(
     "Primary model:",
-    PRIMARY_MODEL
+    GEMINI_MODEL
   );
 
   console.log(
-    "Fallback models:"
-  );
-
-  MODEL_LIST.forEach(
-    (model, index) => {
-      console.log(
-        `${index + 1}. ${model}`
-      );
-    }
+    "Fallback models:",
+    FALLBACK_MODELS.join(", ")
   );
 
   console.log(
