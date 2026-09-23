@@ -4,43 +4,84 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const app = express();
-
-const PORT = process.env.PORT || 3001;
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
-
-const GEMINI_MODEL =
-  process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash";
-
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/interactions";
+// ======================================================
+// Study AI - Server
+// Gemini Interactions API
+// Automatic model fallback system
+// ======================================================
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/* =====================================================
-   EXPRESS
-===================================================== */
+const app = express();
 
-app.use(
-  express.json({
-    limit: "30mb"
-  })
+// Render gives PORT automatically.
+// Local development uses 3001.
+const PORT = process.env.PORT || 3001;
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
+
+// ======================================================
+// Models
+// ======================================================
+
+// Primary model comes from .env.
+// If it fails because of temporary overload,
+// the server automatically tries the fallback models.
+//
+// Example:
+// GEMINI_MODEL=gemini-3.6-flash
+
+const PRIMARY_MODEL =
+  process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash";
+
+// You can change this list later without changing the code
+// by using GEMINI_FALLBACK_MODELS in Render Environment.
+//
+// Default fallback order:
+const DEFAULT_FALLBACK_MODELS = [
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3.7-flash"
+];
+
+const ENV_FALLBACK_MODELS = process.env.GEMINI_FALLBACK_MODELS
+  ? process.env.GEMINI_FALLBACK_MODELS
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean)
+  : DEFAULT_FALLBACK_MODELS;
+
+const MODEL_LIST = [
+  PRIMARY_MODEL,
+  ...ENV_FALLBACK_MODELS
+].filter(
+  (model, index, arr) =>
+    model && arr.indexOf(model) === index
 );
 
-app.use(
-  express.urlencoded({
-    extended: true,
-    limit: "30mb"
-  })
-);
+// Gemini Interactions API
+const GEMINI_URL =
+  "https://generativelanguage.googleapis.com/v1beta/interactions";
 
+// ======================================================
+// Express
+// ======================================================
+
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: true, limit: "20mb" }));
+
+// Serve frontend
 app.use(express.static(__dirname));
 
-/* =====================================================
-   رفع الصور
-===================================================== */
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// ======================================================
+// Upload settings
+// ======================================================
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -48,42 +89,83 @@ const upload = multer({
   limits: {
     files: 20,
     fileSize: 8 * 1024 * 1024
+  },
+
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype?.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed."));
+    }
   }
 });
 
-/* =====================================================
-   الصفحة الرئيسية
-===================================================== */
-
-app.get("/", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "index.html")
-  );
-});
-
-/* =====================================================
-   HEALTH
-===================================================== */
+// ======================================================
+// Health
+// ======================================================
 
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
     server: "Study AI",
-    model: GEMINI_MODEL,
-    geminiKey: Boolean(GEMINI_API_KEY)
+    gemini: !!GEMINI_API_KEY,
+    primaryModel: PRIMARY_MODEL,
+    fallbackModels: ENV_FALLBACK_MODELS
   });
 });
 
-/* =====================================================
-   استخراج النص من Gemini
-===================================================== */
+// ======================================================
+// Helpers
+// ======================================================
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableStatus(status) {
+  return (
+    status === 408 ||
+    status === 429 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  );
+}
+
+function isModelProblem(status, bodyText = "") {
+  const text = bodyText.toLowerCase();
+
+  return (
+    status === 404 ||
+    text.includes("model_not_found") ||
+    text.includes("model is not found") ||
+    text.includes("not available to new users") ||
+    text.includes("is no longer available")
+  );
+}
+
+function cleanText(text) {
+  if (typeof text !== "string") return "";
+
+  return text
+    .replace(/\r/g, "")
+    .trim();
+}
+
+// ======================================================
+// Extract text from Interactions API response
+// ======================================================
 
 function getGeminiText(result) {
-  if (!result) {
+  if (!result || typeof result !== "object") {
     return "";
   }
 
-  /* الطريقة الأساسية */
+  // ------------------------------------------
+  // 1. output_text
+  // ------------------------------------------
+
   if (
     typeof result.output_text === "string" &&
     result.output_text.trim()
@@ -91,296 +173,301 @@ function getGeminiText(result) {
     return result.output_text.trim();
   }
 
-  /* outputs */
+  // ------------------------------------------
+  // 2. outputs
+  // ------------------------------------------
+
   if (Array.isArray(result.outputs)) {
+    const texts = [];
+
     for (const output of result.outputs) {
+      if (!output) continue;
+
       if (
-        typeof output?.text === "string" &&
-        output.text.trim()
+        output.type === "text" &&
+        typeof output.text === "string"
       ) {
-        return output.text.trim();
+        texts.push(output.text);
       }
 
-      if (Array.isArray(output?.content)) {
-        const text = output.content
-          .filter(
-            item => item?.type === "text"
-          )
-          .map(
-            item => item?.text || ""
-          )
-          .join("")
-          .trim();
-
-        if (text) {
-          return text;
+      if (Array.isArray(output.content)) {
+        for (const item of output.content) {
+          if (
+            item?.type === "text" &&
+            typeof item.text === "string"
+          ) {
+            texts.push(item.text);
+          }
         }
       }
     }
+
+    const joined = texts.join("\n").trim();
+
+    if (joined) {
+      return joined;
+    }
   }
 
-  /* steps */
-  if (Array.isArray(result.steps)) {
-    for (const step of result.steps) {
-      if (
-        step?.type !== "model_output"
-      ) {
-        continue;
-      }
+  // ------------------------------------------
+  // 3. steps
+  // ------------------------------------------
 
+  if (Array.isArray(result.steps)) {
+    const texts = [];
+
+    for (const step of result.steps) {
+      if (!step) continue;
+
+      // step.text
       if (
-        typeof step?.text === "string" &&
+        typeof step.text === "string" &&
         step.text.trim()
       ) {
-        return step.text.trim();
+        texts.push(step.text);
       }
 
-      if (Array.isArray(step?.content)) {
-        const text = step.content
-          .filter(
-            item => item?.type === "text"
-          )
-          .map(
-            item => item?.text || ""
-          )
-          .join("")
-          .trim();
-
-        if (text) {
-          return text;
+      // model_output content
+      if (
+        step.type === "model_output" &&
+        Array.isArray(step.content)
+      ) {
+        for (const item of step.content) {
+          if (
+            item?.type === "text" &&
+            typeof item.text === "string"
+          ) {
+            texts.push(item.text);
+          }
         }
       }
+
+      // generic content
+      if (Array.isArray(step.content)) {
+        for (const item of step.content) {
+          if (
+            item?.type === "text" &&
+            typeof item.text === "string"
+          ) {
+            texts.push(item.text);
+          }
+        }
+      }
+    }
+
+    const joined = texts.join("\n").trim();
+
+    if (joined) {
+      return joined;
     }
   }
 
   return "";
 }
 
-/* =====================================================
-   تنظيف JSON
-===================================================== */
+// ======================================================
+// Parse JSON returned by Gemini
+// ======================================================
 
 function parseGeminiJSON(text) {
   if (!text) {
-    throw new Error(
-      "Gemini لم يرجع أي نص."
-    );
+    throw new Error("Gemini returned an empty response.");
   }
 
-  let clean = String(text).trim();
+  let cleaned = text.trim();
 
-  /* إزالة ```json */
-  clean = clean
+  // Remove markdown code fences
+  cleaned = cleaned
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
 
-  /* محاولة مباشرة */
+  // First direct JSON attempt
   try {
-    return JSON.parse(clean);
-  } catch {}
+    return JSON.parse(cleaned);
+  } catch {
+    // Continue below
+  }
 
-  /* البحث عن أول { وآخر } */
-  const start = clean.indexOf("{");
-  const end = clean.lastIndexOf("}");
+  // Find first object
+  const firstObject = cleaned.indexOf("{");
+  const lastObject = cleaned.lastIndexOf("}");
 
-  if (
-    start !== -1 &&
-    end !== -1 &&
-    end > start
-  ) {
-    const possibleJSON =
-      clean.slice(
-        start,
-        end + 1
-      );
+  if (firstObject !== -1 && lastObject > firstObject) {
+    const possibleJSON = cleaned
+      .slice(firstObject, lastObject + 1)
+      .trim();
 
     try {
-      return JSON.parse(
-        possibleJSON
-      );
-    } catch {}
+      return JSON.parse(possibleJSON);
+    } catch {
+      // Continue
+    }
+  }
+
+  // Find first array
+  const firstArray = cleaned.indexOf("[");
+  const lastArray = cleaned.lastIndexOf("]");
+
+  if (firstArray !== -1 && lastArray > firstArray) {
+    const possibleJSON = cleaned
+      .slice(firstArray, lastArray + 1)
+      .trim();
+
+    try {
+      return JSON.parse(possibleJSON);
+    } catch {
+      // Continue
+    }
   }
 
   throw new Error(
-    "Gemini أرسل نتيجة ليست JSON صالحة."
+    "Gemini returned text, but it was not valid JSON."
   );
 }
 
-/* =====================================================
-   استدعاء Gemini
-===================================================== */
+// ======================================================
+// Request Gemini
+// ======================================================
 
-async function callGemini({
+async function requestGemini({
+  model,
   input,
-  systemInstruction = "",
+  systemInstruction,
   responseFormat = null,
   timeoutMs = 120000
 }) {
   if (!GEMINI_API_KEY) {
     throw new Error(
-      "GEMINI_API_KEY غير موجود في ملف .env"
+      "GEMINI_API_KEY is missing from environment variables."
     );
   }
 
-  const controller =
-    new AbortController();
+  const controller = new AbortController();
 
-  const timeout =
-    setTimeout(() => {
-      controller.abort();
-    }, timeoutMs);
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
 
   try {
     const body = {
-      model: GEMINI_MODEL,
-
+      model,
       input,
-
       store: false
     };
 
-    if (
-      systemInstruction &&
-      systemInstruction.trim()
-    ) {
-      body.system_instruction =
-        systemInstruction;
+    if (systemInstruction) {
+      body.system_instruction = systemInstruction;
     }
 
     if (responseFormat) {
-      body.response_format =
-        responseFormat;
+      body.response_format = responseFormat;
     }
 
-    console.log(
-      "========================================"
-    );
+    console.log("");
+    console.log("======================================");
+    console.log("Gemini request");
+    console.log("Model:", model);
+    console.log("======================================");
 
-    console.log(
-      "GEMINI REQUEST"
-    );
+    const response = await fetch(GEMINI_URL, {
+      method: "POST",
 
-    console.log(
-      "Model:",
-      GEMINI_MODEL
-    );
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY
+      },
 
-    console.log(
-      "========================================"
-    );
+      body: JSON.stringify(body),
 
-    const response =
-      await fetch(
-        GEMINI_URL,
-        {
-          method: "POST",
+      signal: controller.signal
+    });
 
-          headers: {
-            "Content-Type":
-              "application/json",
+    const rawText = await response.text();
 
-            "x-goog-api-key":
-              GEMINI_API_KEY
-          },
-
-          body:
-            JSON.stringify(body),
-
-          signal:
-            controller.signal
-        }
-      );
-
-    const raw =
-      await response.text();
-
-    let result = null;
+    let result;
 
     try {
-      result =
-        JSON.parse(raw);
+      result = JSON.parse(rawText);
     } catch {
-      result = null;
+      result = {
+        rawText
+      };
     }
 
-    console.log(
-      "Gemini HTTP:",
-      response.status
-    );
+    console.log("Gemini HTTP status:", response.status);
 
-    console.log(
-      "Gemini status:",
-      result?.status
-    );
+    // ------------------------------------------
+    // Error
+    // ------------------------------------------
 
     if (!response.ok) {
-      const message =
+      const errorMessage =
         result?.error?.message ||
-        raw ||
-        `HTTP ${response.status}`;
+        result?.message ||
+        rawText ||
+        "Unknown Gemini error";
 
-      console.error(
-        "Gemini ERROR:",
-        message
+      console.log(
+        "Gemini error:",
+        errorMessage
       );
 
-      throw new Error(
-        `Gemini API: ${message}`
-      );
+      const error = new Error(errorMessage);
+
+      error.status = response.status;
+      error.body = result;
+
+      throw error;
     }
 
-    const text =
-      getGeminiText(result);
+    // ------------------------------------------
+    // Successful response
+    // ------------------------------------------
 
-    if (!text) {
-      console.error(
-        "لم يتم العثور على النص."
-      );
-
-      console.error(
-        "Gemini full response:"
-      );
-
-      console.error(
-        JSON.stringify(
-          result,
-          null,
-          2
-        )
-      );
-
-      throw new Error(
-        "Gemini رجع نتيجة بدون نص."
-      );
-    }
+    const text = getGeminiText(result);
 
     console.log(
-      "Gemini returned text ✅"
-    );
-
-    console.log(
-      "Text length:",
+      "Gemini response text length:",
       text.length
     );
 
+    if (!text) {
+      console.log(
+        "Gemini returned no text."
+      );
+
+      console.log(
+        "Full Gemini response:",
+        JSON.stringify(result, null, 2)
+      );
+
+      const error = new Error(
+        "Gemini returned an empty response."
+      );
+
+      error.status = 500;
+      error.body = result;
+
+      throw error;
+    }
+
     return {
       text,
-      interactionId:
-        result?.id || null,
-      raw: result
+      result,
+      interactionId: result?.id || null
     };
 
   } catch (error) {
-
-    if (
-      error?.name ===
-      "AbortError"
-    ) {
-      throw new Error(
-        "انتهى وقت انتظار Gemini. حاول مرة أخرى."
+    if (error.name === "AbortError") {
+      const timeoutError = new Error(
+        "Gemini request timed out."
       );
+
+      timeoutError.status = 504;
+
+      throw timeoutError;
     }
 
     throw error;
@@ -390,16 +477,153 @@ async function callGemini({
   }
 }
 
-/* =====================================================
-   JSON SCHEMA
-===================================================== */
+// ======================================================
+// Automatic model fallback
+// ======================================================
+
+async function callGeminiWithFallback(options) {
+  let lastError = null;
+
+  console.log("");
+  console.log("======================================");
+  console.log("MODEL FALLBACK SYSTEM");
+  console.log("Models:");
+  console.log(MODEL_LIST.join(" -> "));
+  console.log("======================================");
+
+  for (let modelIndex = 0; modelIndex < MODEL_LIST.length; modelIndex++) {
+    const model = MODEL_LIST[modelIndex];
+
+    console.log("");
+    console.log(
+      `Trying model ${modelIndex + 1}/${MODEL_LIST.length}: ${model}`
+    );
+
+    // ------------------------------------------
+    // Try this model
+    // ------------------------------------------
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const result = await requestGemini({
+          ...options,
+          model
+        });
+
+        console.log(
+          `SUCCESS: ${model}`
+        );
+
+        return {
+          ...result,
+          modelUsed: model
+        };
+
+      } catch (error) {
+        lastError = error;
+
+        const status = error?.status;
+
+        console.log(
+          `FAILED: ${model} | attempt ${attempt} | status ${status || "unknown"}`
+        );
+
+        // --------------------------------------
+        // Authentication / permission errors
+        // Don't keep retrying the same key.
+        // --------------------------------------
+
+        if (
+          status === 401 ||
+          status === 403
+        ) {
+          throw error;
+        }
+
+        // --------------------------------------
+        // Payment / quota errors
+        // Fallback models won't necessarily
+        // fix an account-level quota problem.
+        // --------------------------------------
+
+        if (status === 402) {
+          throw error;
+        }
+
+        // --------------------------------------
+        // Model unavailable
+        // Immediately try next model.
+        // --------------------------------------
+
+        if (
+          isModelProblem(
+            status,
+            error?.message || ""
+          )
+        ) {
+          console.log(
+            `Model unavailable: ${model}`
+          );
+
+          break;
+        }
+
+        // --------------------------------------
+        // Temporary server overload
+        // Retry once with backoff.
+        // --------------------------------------
+
+        if (
+          isRetryableStatus(status) &&
+          attempt === 1
+        ) {
+          const delay = 1500;
+
+          console.log(
+            `Temporary error. Retrying ${model} after ${delay}ms...`
+          );
+
+          await sleep(delay);
+
+          continue;
+        }
+
+        // --------------------------------------
+        // Other errors
+        // Try next model.
+        // --------------------------------------
+
+        break;
+      }
+    }
+
+    // ------------------------------------------
+    // Move to next model
+    // ------------------------------------------
+
+    if (modelIndex < MODEL_LIST.length - 1) {
+      console.log(
+        `Switching from ${model} to ${MODEL_LIST[modelIndex + 1]}...`
+      );
+
+      // Small delay to avoid hammering API
+      await sleep(700);
+    }
+  }
+
+  throw lastError || new Error(
+    "All Gemini models failed."
+  );
+}
+
+// ======================================================
+// Lesson schema
+// ======================================================
 
 const lessonSchema = {
-
   type: "object",
 
   properties: {
-
     title: {
       type: "string"
     },
@@ -414,7 +638,6 @@ const lessonSchema = {
 
     important_points: {
       type: "array",
-
       items: {
         type: "string"
       }
@@ -422,93 +645,44 @@ const lessonSchema = {
 
     key_terms: {
       type: "array",
-
       items: {
         type: "string"
       }
     },
 
     definitions: {
-
       type: "array",
-
       items: {
-
         type: "object",
-
         properties: {
-
           term: {
             type: "string"
           },
-
           definition: {
             type: "string"
           }
-
         },
-
         required: [
           "term",
           "definition"
-        ],
-
-        additionalProperties: false
+        ]
       }
     },
 
     laws: {
-
       type: "array",
-
       items: {
-
-        type: "object",
-
-        properties: {
-
-          name: {
-            type: "string"
-          },
-
-          formula: {
-            type: "string"
-          },
-
-          explanation: {
-            type: "string"
-          }
-
-        },
-
-        required: [
-          "name",
-          "formula",
-          "explanation"
-        ],
-
-        additionalProperties: false
+        type: "string"
       }
     },
 
     quiz: {
-
       type: "array",
-
       items: {
-
         type: "object",
-
         properties: {
-
           type: {
-            type: "string",
-
-            enum: [
-              "written",
-              "multiple",
-              "true_false"
-            ]
+            type: "string"
           },
 
           question: {
@@ -516,9 +690,7 @@ const lessonSchema = {
           },
 
           options: {
-
             type: "array",
-
             items: {
               type: "string"
             }
@@ -526,21 +698,22 @@ const lessonSchema = {
 
           answer: {
             type: "string"
-          }
+          },
 
+          explanation: {
+            type: "string"
+          }
         },
 
         required: [
           "type",
           "question",
           "options",
-          "answer"
-        ],
-
-        additionalProperties: false
+          "answer",
+          "explanation"
+        ]
       }
     }
-
   },
 
   required: [
@@ -552,634 +725,483 @@ const lessonSchema = {
     "definitions",
     "laws",
     "quiz"
-  ],
-
-  additionalProperties: false
+  ]
 };
 
-/* =====================================================
-   تحليل الدرس
-===================================================== */
+// ======================================================
+// Normalize analysis
+// ======================================================
+
+function normalizeAnalysis(data) {
+  if (!data || typeof data !== "object") {
+    data = {};
+  }
+
+  return {
+    title:
+      typeof data.title === "string"
+        ? data.title
+        : "تحليل الدرس",
+
+    summary:
+      typeof data.summary === "string"
+        ? data.summary
+        : "",
+
+    explanation:
+      typeof data.explanation === "string"
+        ? data.explanation
+        : "",
+
+    important_points:
+      Array.isArray(data.important_points)
+        ? data.important_points
+            .filter((x) => typeof x === "string")
+        : [],
+
+    key_terms:
+      Array.isArray(data.key_terms)
+        ? data.key_terms
+            .filter((x) => typeof x === "string")
+        : [],
+
+    definitions:
+      Array.isArray(data.definitions)
+        ? data.definitions
+            .filter(
+              (x) =>
+                x &&
+                typeof x === "object"
+            )
+            .map((x) => ({
+              term:
+                typeof x.term === "string"
+                  ? x.term
+                  : "",
+
+              definition:
+                typeof x.definition === "string"
+                  ? x.definition
+                  : ""
+            }))
+        : [],
+
+    laws:
+      Array.isArray(data.laws)
+        ? data.laws
+            .filter((x) => typeof x === "string")
+        : [],
+
+    quiz:
+      Array.isArray(data.quiz)
+        ? data.quiz
+            .filter(
+              (x) =>
+                x &&
+                typeof x === "object"
+            )
+            .map((q) => ({
+              type:
+                typeof q.type === "string"
+                  ? q.type
+                  : "كتابي",
+
+              question:
+                typeof q.question === "string"
+                  ? q.question
+                  : "",
+
+              options:
+                Array.isArray(q.options)
+                  ? q.options
+                      .filter(
+                        (x) =>
+                          typeof x === "string"
+                      )
+                  : [],
+
+              answer:
+                typeof q.answer === "string"
+                  ? q.answer
+                  : "",
+
+              explanation:
+                typeof q.explanation === "string"
+                  ? q.explanation
+                  : ""
+            }))
+        : []
+  };
+}
+
+// ======================================================
+// Analyze lesson
+// ======================================================
 
 app.post(
   "/api/analyze",
-
-  upload.array(
-    "images",
-    20
-  ),
-
+  upload.array("images", 20),
   async (req, res) => {
 
     try {
-
-      console.log(
-        "\n========================================"
-      );
-
-      console.log(
-        "ANALYZE REQUEST"
-      );
-
-      console.log(
-        "========================================"
-      );
-
-      if (!GEMINI_API_KEY) {
-
-        return res
-          .status(500)
-          .json({
-
-            success: false,
-
-            error:
-              "GEMINI_API_KEY غير موجود في ملف .env"
-
-          });
-      }
-
-      const files =
-        req.files || [];
-
-      console.log(
-        "عدد الصور:",
-        files.length
-      );
-
-      if (!files.length) {
-
-        return res
-          .status(400)
-          .json({
-
-            success: false,
-
-            error:
-              "لم يتم إرسال أي صورة."
-
-          });
-      }
-
-      const totalSize =
-        files.reduce(
-          (total, file) =>
-            total + file.size,
-          0
-        );
-
-      console.log(
-        "حجم الصور:",
-        Math.round(
-          totalSize /
-          1024 /
-          1024 *
-          100
-        ) / 100,
-        "MB"
-      );
-
-      if (
-        totalSize >
-        14 * 1024 * 1024
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            success: false,
-
-            error:
-              "حجم الصور كبير جدًا. حاول رفع عدد أقل من الصور."
-
-          });
-      }
-
-      /* =====================================
-         بناء المدخلات
-      ===================================== */
-
-      const input = [];
-
-      input.push({
-
-        type: "text",
-
-        text: `
-أنت الآن تقوم بتحليل درس مدرسي من عدة صور.
-
-حلل جميع الصور المرفقة على أنها صفحات من نفس الدرس.
-
-اقرأ النص الموجود في الصور بدقة شديدة.
-
-إذا كانت هناك عدة صفحات، اربط المعلومات الموجودة بينها.
-
-المطلوب منك إنشاء تحليل دراسي كامل باللغة العربية.
-
-أخرج:
-
-1. عنوان الدرس.
-
-2. ملخص الدرس:
-ملخص واضح ومفيد وليس مجرد نسخ للنص.
-
-3. الشرح المبسط:
-اشرح الدرس بطريقة سهلة يفهمها الطالب.
-
-4. أهم النقاط:
-استخرج أهم الأفكار التي يجب على الطالب حفظها وفهمها.
-
-5. المصطلحات المهمة:
-استخرج المصطلحات الأساسية الموجودة في الدرس.
-
-6. التعاريف:
-استخرج التعريفات الموجودة في الصور.
-
-7. القوانين والمعادلات:
-استخرج القوانين والمعادلات الموجودة في الصور.
-إذا لم توجد قوانين، اجعل القائمة فارغة.
-
-8. الاختبار:
-أنشئ اختبارًا من محتوى الدرس فقط.
-
-يجب أن يكون الاختبار متنوعًا:
-
-- أسئلة كتابية.
-- أسئلة اختيار من متعدد.
-- أسئلة صح وخطأ.
-
-اجعل الأسئلة طبيعية وتشبه الاختبارات المدرسية الحقيقية.
-
-لا تستخدم أسئلة ركيكة مثل:
-"ما هو المصطلح؟"
-
-اكتب أسئلة طبيعية مثل:
-"ما اسم المرحلة التي تحدث فيها ...؟"
-
-لأسئلة الاختيار من متعدد:
-ضع 4 خيارات.
-
-لأسئلة صح وخطأ:
-ضع الخيارين:
-صح
-خطأ
-
-للأسئلة الكتابية:
-اجعل options مصفوفة فارغة.
-
-مهم جدًا:
-
-لا تخترع معلومات غير موجودة في الصور.
-
-إذا لم تجد تعريفًا واضحًا:
-لا تخترع تعريفًا.
-
-إذا لم تجد قانونًا:
-اجعل laws فارغة.
-
-إذا كانت الصورة غير واضحة:
-لا تخمن.
-
-إذا وجدت جدولًا أو مخططًا:
-حاول فهمه واستخدم معلوماته.
-
-أنشئ على الأقل 10 أسئلة في الاختبار إذا كان محتوى الدرس يسمح بذلك.
-
-النتيجة يجب أن تكون باللغة العربية.
-
-التزم تمامًا بالـ JSON Schema.
-`
-      });
-
-      /* =====================================
-         إضافة الصور
-      ===================================== */
-
-      for (const file of files) {
-
-        console.log(
-          "إضافة صورة:",
-          file.originalname,
-          file.mimetype,
-          file.size
-        );
-
-        input.push({
-
-          type: "image",
-
-          mime_type:
-            file.mimetype ||
-            "image/jpeg",
-
-          data:
-            file.buffer.toString(
-              "base64"
-            )
-
+      console.log("");
+      console.log("======================================");
+      console.log("ANALYZE REQUEST");
+      console.log("======================================");
+
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "لم يتم رفع أي صورة."
         });
       }
 
-      /* =====================================
-         System Instruction
-      ===================================== */
+      console.log(
+        "عدد الصور:",
+        req.files.length
+      );
+
+      const totalBytes = req.files.reduce(
+        (sum, file) =>
+          sum + file.buffer.length,
+        0
+      );
+
+      console.log(
+        "حجم الصور:",
+        (totalBytes / 1024 / 1024).toFixed(2),
+        "MB"
+      );
+
+      // ----------------------------------------
+      // Text instruction
+      // ----------------------------------------
+
+      const input = [
+        {
+          type: "text",
+
+          text: `
+أنت مساعد دراسة ذكي متخصص في فهم الدروس من صور الكتب والمذكرات.
+
+حلل جميع الصور المرفقة معًا، ولا تعتمد على صورة واحدة فقط.
+
+مهم جدًا:
+- اقرأ النص الموجود في الصور بدقة.
+- لا تخترع معلومات غير موجودة في الدرس.
+- إذا كانت معلومة غير واضحة في الصور فلا تخمنها.
+- اكتب النتائج باللغة العربية.
+- اجعل الشرح واضحًا للطالب وسهل الفهم.
+- استخرج المعلومات المهمة فقط.
+- استخرج التعاريف الموجودة فعلًا.
+- استخرج القوانين والمعادلات الموجودة فعلًا.
+- أنشئ اختبارًا يشبه الاختبارات المدرسية الحقيقية.
+- لا تجعل كل الأسئلة من نوع واحد.
+
+أنواع الاختبار المطلوبة:
+1. اختيار من متعدد.
+2. صح وخطأ.
+3. أسئلة كتابية.
+
+في أسئلة الاختيار من متعدد:
+- ضع 4 خيارات عندما يكون ذلك ممكنًا.
+- اجعل السؤال طبيعيًا مثل أسئلة الاختبارات المدرسية.
+- لا تستخدم أسئلة عامة أو مصطلحات غريبة.
+
+في أسئلة صح وخطأ:
+- اجعل options فارغة أو تحتوي على ["صح","خطأ"].
+
+في الأسئلة الكتابية:
+- اجعل options فارغة.
+
+أنشئ عددًا مناسبًا من الأسئلة حسب كمية محتوى الدرس، ويفضل 10 أسئلة أو أكثر إذا كان محتوى الصور يسمح بذلك.
+
+أعد النتيجة JSON فقط وبنفس الهيكل المطلوب.
+          `.trim()
+        }
+      ];
+
+      // ----------------------------------------
+      // Add all images
+      // ----------------------------------------
+
+      for (const file of req.files) {
+        input.push({
+          type: "image",
+
+          mime_type:
+            file.mimetype || "image/jpeg",
+
+          data:
+            file.buffer.toString("base64")
+        });
+      }
+
+      // ----------------------------------------
+      // System instruction
+      // ----------------------------------------
 
       const systemInstruction = `
-أنت Study AI.
+أنت Study AI، مساعد تعليمي باللغة العربية.
 
-أنت مساعد دراسي متخصص في تحليل صور الكتب والدروس المدرسية.
+مهمتك تحليل صور الدرس وتحويلها إلى:
+- ملخص واضح.
+- شرح مبسط.
+- أهم النقاط.
+- المصطلحات المهمة.
+- التعاريف.
+- القوانين والمعادلات.
+- اختبار متنوع.
 
-اقرأ الصور أولًا.
+اعتمد على محتوى الصور فقط.
+لا تخترع معلومات غير موجودة.
+إذا لم يوجد قانون في الصور اجعل laws مصفوفة فارغة.
+إذا لم توجد تعاريف واضحة اجعل definitions مصفوفة فارغة.
 
-افهم محتوى الدرس.
+الاختبار يجب أن يحتوي على:
+- اختيار من متعدد.
+- صح وخطأ.
+- أسئلة كتابية.
 
-ثم استخرج المعلومات المهمة.
+أعد JSON صالحًا فقط.
+      `.trim();
 
-يجب أن تكون جميع المعلومات مبنية على الصور المرسلة.
+      // ----------------------------------------
+      // Gemini structured output
+      // ----------------------------------------
 
-لا تخترع معلومات.
+      const responseFormat = {
+        type: "text",
+        mime_type: "application/json",
+        schema: lessonSchema
+      };
 
-اكتب باللغة العربية.
-
-أنشئ ملخصًا وشرحًا مبسطًا ونقاطًا مهمة ومصطلحات وتعريفات وقوانين واختبارًا.
-
-الاختبار يجب أن يكون متنوعًا:
-كتابي + اختيار من متعدد + صح وخطأ.
-
-اجعل الأسئلة مشابهة لأسئلة الاختبارات المدرسية الحقيقية.
-
-التزم بالـ JSON Schema حرفيًا.
-`;
-
-      /* =====================================
-         Gemini
-      ===================================== */
+      // ----------------------------------------
+      // Call with automatic fallback
+      // ----------------------------------------
 
       const result =
-        await callGemini({
-
+        await callGeminiWithFallback({
           input,
-
           systemInstruction,
-
-          responseFormat: {
-
-            type: "text",
-
-            mime_type:
-              "application/json",
-
-            schema:
-              lessonSchema
-          },
-
+          responseFormat,
           timeoutMs: 120000
         });
 
       console.log(
-        "تم استلام نتيجة Gemini ✅"
+        "======================================"
       );
 
-      /* =====================================
-         تحويل JSON
-      ===================================== */
+      console.log(
+        "ANALYSIS SUCCESS"
+      );
+
+      console.log(
+        "Model used:",
+        result.modelUsed
+      );
+
+      console.log(
+        "Interaction ID:",
+        result.interactionId
+      );
+
+      console.log(
+        "======================================"
+      );
+
+      // ----------------------------------------
+      // Parse JSON
+      // ----------------------------------------
 
       let data;
 
       try {
-
-        data =
-          parseGeminiJSON(
-            result.text
-          );
-
-      } catch (error) {
+        data = parseGeminiJSON(
+          result.text
+        );
+      } catch (parseError) {
 
         console.error(
-          "فشل تحويل JSON:"
+          "JSON parse error:",
+          parseError.message
         );
 
         console.error(
+          "Gemini text:",
           result.text
         );
 
-        throw error;
+        return res.status(500).json({
+          success: false,
+          error:
+            "تمت استجابة Gemini ولكن لم أستطع تحويلها إلى بيانات التحليل.",
+          modelUsed: result.modelUsed
+        });
       }
 
-      /* =====================================
-         حماية البيانات
-      ===================================== */
+      data = normalizeAnalysis(data);
 
-      if (
-        typeof data !==
-        "object" ||
-        data === null
-      ) {
-
-        throw new Error(
-          "نتيجة Gemini ليست كائن JSON."
-        );
-      }
-
-      data.title =
-        String(
-          data.title ||
-          "تحليل الدرس"
-        );
-
-      data.summary =
-        String(
-          data.summary ||
-          ""
-        );
-
-      data.explanation =
-        String(
-          data.explanation ||
-          ""
-        );
-
-      data.important_points =
-        Array.isArray(
-          data.important_points
-        )
-          ? data.important_points
-          : [];
-
-      data.key_terms =
-        Array.isArray(
-          data.key_terms
-        )
-          ? data.key_terms
-          : [];
-
-      data.definitions =
-        Array.isArray(
-          data.definitions
-        )
-          ? data.definitions
-          : [];
-
-      data.laws =
-        Array.isArray(
-          data.laws
-        )
-          ? data.laws
-          : [];
-
-      data.quiz =
-        Array.isArray(
-          data.quiz
-        )
-          ? data.quiz
-          : [];
-
-      console.log(
-        "========================================"
-      );
-
-      console.log(
-        "ANALYSIS RESULT"
-      );
-
-      console.log(
-        "Title:",
-        data.title
-      );
-
-      console.log(
-        "Summary:",
-        data.summary.length,
-        "characters"
-      );
-
-      console.log(
-        "Important points:",
-        data.important_points.length
-      );
-
-      console.log(
-        "Terms:",
-        data.key_terms.length
-      );
-
-      console.log(
-        "Definitions:",
-        data.definitions.length
-      );
-
-      console.log(
-        "Laws:",
-        data.laws.length
-      );
-
-      console.log(
-        "Quiz:",
-        data.quiz.length
-      );
-
-      console.log(
-        "========================================"
-      );
-
-      /* =====================================
-         إرسال النتيجة للواجهة
-         
-         نرسلها بثلاث صيغ للتوافق
-         مع index.html القديم والجديد
-      ===================================== */
+      // ----------------------------------------
+      // Return
+      // ----------------------------------------
 
       return res.json({
-
         success: true,
 
-        data: data,
+        data,
 
+        // Compatibility with different frontend versions
         analysis: data,
 
         ...data,
 
+        modelUsed: result.modelUsed,
+
         interactionId:
           result.interactionId
       });
 
     } catch (error) {
 
+      console.error("");
       console.error(
-        "\n========================================"
+        "======================================"
       );
-
       console.error(
         "ANALYZE ERROR"
       );
-
       console.error(
-        error?.message ||
-        error
+        "======================================"
       );
 
       console.error(
-        "========================================"
+        "Status:",
+        error?.status
       );
 
-      return res
-        .status(500)
-        .json({
+      console.error(
+        "Message:",
+        error?.message
+      );
 
+      // ----------------------------------------
+      // User-friendly errors
+      // ----------------------------------------
+
+      if (error?.status === 401) {
+        return res.status(401).json({
           success: false,
-
           error:
-            error?.message ||
-            "حدث خطأ أثناء تحليل الدرس."
-
+            "مفتاح Gemini غير صالح أو غير مصرح به في Render."
         });
+      }
+
+      if (error?.status === 403) {
+        return res.status(403).json({
+          success: false,
+          error:
+            "مفتاح Gemini لا يملك صلاحية استخدام هذا الطلب."
+        });
+      }
+
+      if (error?.status === 402) {
+        return res.status(402).json({
+          success: false,
+          error:
+            "رصيد أو فئة الدفع في Gemini تمنع الطلب حاليًا."
+        });
+      }
+
+      if (error?.status === 429) {
+        return res.status(429).json({
+          success: false,
+          error:
+            "تم تجاوز حد الاستخدام في Gemini. حاول مرة أخرى بعد قليل."
+        });
+      }
+
+      if (error?.status === 503) {
+        return res.status(503).json({
+          success: false,
+          error:
+            "نماذج Gemini مشغولة حاليًا. تم تجربة النماذج الاحتياطية ولم تنجح."
+        });
+      }
+
+      if (error?.status === 504) {
+        return res.status(504).json({
+          success: false,
+          error:
+            "استغرق تحليل الدرس وقتًا طويلًا. حاول مرة أخرى."
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error:
+          error?.message ||
+          "حدث خطأ أثناء تحليل الدرس."
+      });
     }
   }
 );
 
-/* =====================================================
-   مساعد الذكاء
-===================================================== */
+// ======================================================
+// Chat
+// ======================================================
 
 app.post(
   "/api/chat",
-
   async (req, res) => {
 
     try {
+      const message =
+        typeof req.body?.message === "string"
+          ? req.body.message.trim()
+          : "";
 
-      const {
-        message,
-        lesson
-      } = req.body || {};
-
-      if (
-        !message ||
-        !String(
-          message
-        ).trim()
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            success: false,
-
-            error:
-              "اكتب سؤالك أولًا."
-
-          });
+      if (!message) {
+        return res.status(400).json({
+          success: false,
+          error: "اكتب رسالة أولًا."
+        });
       }
 
-      let lessonText = "";
-
-      if (lesson) {
-
-        lessonText =
-          typeof lesson ===
-          "string"
-
-            ? lesson
-
-            : JSON.stringify(
-                lesson
-              );
-      }
+      const input = [
+        {
+          type: "text",
+          text: message
+        }
+      ];
 
       const systemInstruction = `
 أنت مساعد Study AI.
 
-تحدث مع الطالب باللغة العربية.
-
-أجب بطريقة طبيعية وودودة.
-
+تحدث باللغة العربية.
+أجب بطريقة طبيعية وواضحة ومفيدة للطالب.
 لا تستخدم JSON.
-
-لا تكتب أقواس JSON.
-
-أجب مباشرة عن سؤال الطالب.
-
-إذا كان السؤال متعلقًا بالدرس،
-استخدم محتوى الدرس.
-
-إذا لم تكن المعلومة موجودة في الدرس،
-قل للطالب إنها غير موجودة في المحتوى المرسل.
-
-إذا طلب الطالب شرحًا:
-اشرح خطوة بخطوة.
-
-إذا لم يفهم:
-اشرح بطريقة أبسط.
-
-لا تطيل بدون داعٍ.
-`;
-
-      const userText = `
-سؤال الطالب:
-
-${String(
-  message
-).trim()}
-
-${
-  lessonText
-    ? `
-محتوى الدرس:
-
-${lessonText}
-`
-    : ""
-}
-`;
+إذا كان السؤال عن الدراسة فاشرح خطوة بخطوة.
+لا تخترع معلومات إذا لم تكن متأكدًا.
+      `.trim();
 
       const result =
-        await callGemini({
-
-          input: userText,
-
+        await callGeminiWithFallback({
+          input,
           systemInstruction,
-
-          timeoutMs: 60000
+          responseFormat: null,
+          timeoutMs: 30000
         });
 
-      let answer =
-        result.text.trim();
-
-      /* تنظيف JSON لو رجع بالخطأ */
-
-      try {
-
-        const parsed =
-          JSON.parse(answer);
-
-        if (
-          typeof parsed?.response ===
-          "string"
-        ) {
-
-          answer =
-            parsed.response;
-
-        } else if (
-          typeof parsed?.answer ===
-          "string"
-        ) {
-
-          answer =
-            parsed.answer;
-        }
-
-      } catch {
-        /* الرد طبيعي */
-      }
-
       return res.json({
-
         success: true,
 
-        answer,
+        answer: cleanText(
+          result.text
+        ),
+
+        modelUsed:
+          result.modelUsed,
 
         interactionId:
           result.interactionId
@@ -1188,121 +1210,131 @@ ${lessonText}
     } catch (error) {
 
       console.error(
-        "Chat Error:",
-        error?.message ||
-        error
+        "CHAT ERROR:",
+        error?.message
       );
 
-      return res
-        .status(500)
-        .json({
-
+      if (error?.status === 401) {
+        return res.status(401).json({
           success: false,
-
           error:
-            error?.message ||
-            "حدث خطأ في مساعد الذكاء."
-
+            "مفتاح Gemini غير صالح."
         });
+      }
+
+      if (error?.status === 429) {
+        return res.status(429).json({
+          success: false,
+          error:
+            "Gemini مشغول أو تم تجاوز الحد مؤقتًا. حاول مرة أخرى."
+        });
+      }
+
+      if (error?.status === 503) {
+        return res.status(503).json({
+          success: false,
+          error:
+            "Gemini مشغول حاليًا. حاول مرة أخرى بعد قليل."
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error:
+          error?.message ||
+          "حدث خطأ في المساعد الذكي."
+      });
     }
   }
 );
 
-/* =====================================================
-   Multer / Server Errors
-===================================================== */
+// ======================================================
+// Multer error handler
+// ======================================================
 
 app.use(
-  (
-    error,
-    req,
-    res,
-    next
-  ) => {
+  (error, req, res, next) => {
 
-    if (
-      error instanceof
-      multer.MulterError
-    ) {
-
-      return res
-        .status(400)
-        .json({
-
-          success: false,
-
-          error:
-            `خطأ في رفع الملفات: ${error.message}`
-
-        });
+    if (error instanceof multer.MulterError) {
+      return res.status(400).json({
+        success: false,
+        error:
+          `Upload error: ${error.message}`
+      });
     }
 
     if (error) {
-
       console.error(
-        "Server Error:",
+        "SERVER ERROR:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-
-          success: false,
-
-          error:
-            error.message ||
-            "حدث خطأ في السيرفر."
-
-        });
+      return res.status(500).json({
+        success: false,
+        error:
+          error.message ||
+          "حدث خطأ في السيرفر."
+      });
     }
 
     next();
   }
 );
 
-/* =====================================================
-   تشغيل السيرفر
-===================================================== */
+// ======================================================
+// Start
+// ======================================================
 
-app.listen(
-  PORT,
-  () => {
+app.listen(PORT, () => {
 
-    console.log(
-      "========================================"
-    );
+  console.log("");
+  console.log(
+    "======================================"
+  );
 
-    console.log(
-      "          STUDY AI SERVER"
-    );
+  console.log(
+    "       STUDY AI SERVER"
+  );
 
-    console.log(
-      "========================================"
-    );
+  console.log(
+    "======================================"
+  );
 
-    console.log(
-      `Port: ${PORT}`
-    );
+  console.log(
+    "Port:",
+    PORT
+  );
 
-    console.log(
-      `Model: ${GEMINI_MODEL}`
-    );
+  console.log(
+    "Primary model:",
+    PRIMARY_MODEL
+  );
 
-    console.log(
-      `API Key: ${
-        GEMINI_API_KEY
-          ? "موجودة ✅"
-          : "غير موجودة ❌"
-      }`
-    );
+  console.log(
+    "Fallback models:"
+  );
 
-    console.log(
-      `Website: http://localhost:${PORT}`
-    );
+  MODEL_LIST.forEach(
+    (model, index) => {
+      console.log(
+        `${index + 1}. ${model}`
+      );
+    }
+  );
 
-    console.log(
-      "========================================"
-    );
-  }
-);
+  console.log(
+    "API Key:",
+    GEMINI_API_KEY
+      ? "موجودة ✅"
+      : "مفقودة ❌"
+  );
+
+  console.log(
+    "Website:",
+    `http://localhost:${PORT}`
+  );
+
+  console.log(
+    "======================================"
+  );
+});
