@@ -1,586 +1,1308 @@
 import "dotenv/config";
-
 import express from "express";
 import multer from "multer";
-import OpenAI from "openai";
 import path from "path";
 import { fileURLToPath } from "url";
+
+const app = express();
+
+const PORT = process.env.PORT || 3001;
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
+
+const GEMINI_MODEL =
+  process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash";
+
+const GEMINI_URL =
+  "https://generativelanguage.googleapis.com/v1beta/interactions";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-
-const PORT =
-  process.env.PORT || 3000;
-
-if (!process.env.OPENAI_API_KEY) {
-  console.error(
-    "❌ OPENAI_API_KEY غير موجودة في Environment Variables."
-  );
-}
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-app.use(express.json({
-  limit: "2mb"
-}));
+/* =====================================================
+   EXPRESS
+===================================================== */
 
 app.use(
-  express.static(__dirname)
+  express.json({
+    limit: "30mb"
+  })
 );
 
-/* =========================
-   Multer
-========================= */
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "30mb"
+  })
+);
+
+app.use(express.static(__dirname));
+
+/* =====================================================
+   رفع الصور
+===================================================== */
 
 const upload = multer({
   storage: multer.memoryStorage(),
 
   limits: {
     files: 20,
-    fileSize: 10 * 1024 * 1024
-  },
-
-  fileFilter: (req,file,cb) => {
-
-    if (
-      file.mimetype &&
-      file.mimetype.startsWith("image/")
-    ) {
-      cb(null,true);
-    } else {
-      cb(
-        new Error(
-          "يسمح برفع الصور فقط."
-        )
-      );
-    }
+    fileSize: 8 * 1024 * 1024
   }
 });
 
-/* =========================
-   JSON Cleaning
-========================= */
+/* =====================================================
+   الصفحة الرئيسية
+===================================================== */
 
-function cleanJsonText(text) {
+app.get("/", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "index.html")
+  );
+});
 
-  let cleaned =
-    String(text || "")
-      .trim();
+/* =====================================================
+   HEALTH
+===================================================== */
 
-  cleaned =
-    cleaned.replace(
-      /^```(?:json)?\s*/i,
-      ""
-    );
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    server: "Study AI",
+    model: GEMINI_MODEL,
+    geminiKey: Boolean(GEMINI_API_KEY)
+  });
+});
 
-  cleaned =
-    cleaned.replace(
-      /\s*```$/i,
-      ""
-    );
+/* =====================================================
+   استخراج النص من Gemini
+===================================================== */
 
-  const first =
-    cleaned.indexOf("{");
-
-  const last =
-    cleaned.lastIndexOf("}");
-
-  if (
-    first !== -1 &&
-    last !== -1 &&
-    last > first
-  ) {
-    cleaned =
-      cleaned.slice(
-        first,
-        last + 1
-      );
+function getGeminiText(result) {
+  if (!result) {
+    return "";
   }
 
-  return cleaned;
+  /* الطريقة الأساسية */
+  if (
+    typeof result.output_text === "string" &&
+    result.output_text.trim()
+  ) {
+    return result.output_text.trim();
+  }
+
+  /* outputs */
+  if (Array.isArray(result.outputs)) {
+    for (const output of result.outputs) {
+      if (
+        typeof output?.text === "string" &&
+        output.text.trim()
+      ) {
+        return output.text.trim();
+      }
+
+      if (Array.isArray(output?.content)) {
+        const text = output.content
+          .filter(
+            item => item?.type === "text"
+          )
+          .map(
+            item => item?.text || ""
+          )
+          .join("")
+          .trim();
+
+        if (text) {
+          return text;
+        }
+      }
+    }
+  }
+
+  /* steps */
+  if (Array.isArray(result.steps)) {
+    for (const step of result.steps) {
+      if (
+        step?.type !== "model_output"
+      ) {
+        continue;
+      }
+
+      if (
+        typeof step?.text === "string" &&
+        step.text.trim()
+      ) {
+        return step.text.trim();
+      }
+
+      if (Array.isArray(step?.content)) {
+        const text = step.content
+          .filter(
+            item => item?.type === "text"
+          )
+          .map(
+            item => item?.text || ""
+          )
+          .join("")
+          .trim();
+
+        if (text) {
+          return text;
+        }
+      }
+    }
+  }
+
+  return "";
 }
 
-/* =========================
-   Normalize Study Data
-========================= */
+/* =====================================================
+   تنظيف JSON
+===================================================== */
 
-function normalizeStudyData(data) {
+function parseGeminiJSON(text) {
+  if (!text) {
+    throw new Error(
+      "Gemini لم يرجع أي نص."
+    );
+  }
 
-  const arrayOrEmpty = value =>
-    Array.isArray(value)
-      ? value
-      : [];
+  let clean = String(text).trim();
 
-  return {
+  /* إزالة ```json */
+  clean = clean
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
 
-    summary:
-      typeof data?.summary === "string"
-        ? data.summary
-        : "",
+  /* محاولة مباشرة */
+  try {
+    return JSON.parse(clean);
+  } catch {}
 
-    explanation:
-      typeof data?.explanation === "string"
-        ? data.explanation
-        : "",
+  /* البحث عن أول { وآخر } */
+  const start = clean.indexOf("{");
+  const end = clean.lastIndexOf("}");
 
-    important_points:
-      arrayOrEmpty(
-        data?.important_points
-      ),
+  if (
+    start !== -1 &&
+    end !== -1 &&
+    end > start
+  ) {
+    const possibleJSON =
+      clean.slice(
+        start,
+        end + 1
+      );
 
-    key_terms:
-      arrayOrEmpty(
-        data?.key_terms
-      ),
+    try {
+      return JSON.parse(
+        possibleJSON
+      );
+    } catch {}
+  }
 
-    definitions:
-      arrayOrEmpty(
-        data?.definitions
-      ),
-
-    laws:
-      arrayOrEmpty(
-        data?.laws
-      ),
-
-    quiz:
-      arrayOrEmpty(
-        data?.quiz
-      )
-  };
+  throw new Error(
+    "Gemini أرسل نتيجة ليست JSON صالحة."
+  );
 }
 
-/* =========================
-   Analyze Lesson
-========================= */
+/* =====================================================
+   استدعاء Gemini
+===================================================== */
+
+async function callGemini({
+  input,
+  systemInstruction = "",
+  responseFormat = null,
+  timeoutMs = 120000
+}) {
+  if (!GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY غير موجود في ملف .env"
+    );
+  }
+
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+
+  try {
+    const body = {
+      model: GEMINI_MODEL,
+
+      input,
+
+      store: false
+    };
+
+    if (
+      systemInstruction &&
+      systemInstruction.trim()
+    ) {
+      body.system_instruction =
+        systemInstruction;
+    }
+
+    if (responseFormat) {
+      body.response_format =
+        responseFormat;
+    }
+
+    console.log(
+      "========================================"
+    );
+
+    console.log(
+      "GEMINI REQUEST"
+    );
+
+    console.log(
+      "Model:",
+      GEMINI_MODEL
+    );
+
+    console.log(
+      "========================================"
+    );
+
+    const response =
+      await fetch(
+        GEMINI_URL,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "x-goog-api-key":
+              GEMINI_API_KEY
+          },
+
+          body:
+            JSON.stringify(body),
+
+          signal:
+            controller.signal
+        }
+      );
+
+    const raw =
+      await response.text();
+
+    let result = null;
+
+    try {
+      result =
+        JSON.parse(raw);
+    } catch {
+      result = null;
+    }
+
+    console.log(
+      "Gemini HTTP:",
+      response.status
+    );
+
+    console.log(
+      "Gemini status:",
+      result?.status
+    );
+
+    if (!response.ok) {
+      const message =
+        result?.error?.message ||
+        raw ||
+        `HTTP ${response.status}`;
+
+      console.error(
+        "Gemini ERROR:",
+        message
+      );
+
+      throw new Error(
+        `Gemini API: ${message}`
+      );
+    }
+
+    const text =
+      getGeminiText(result);
+
+    if (!text) {
+      console.error(
+        "لم يتم العثور على النص."
+      );
+
+      console.error(
+        "Gemini full response:"
+      );
+
+      console.error(
+        JSON.stringify(
+          result,
+          null,
+          2
+        )
+      );
+
+      throw new Error(
+        "Gemini رجع نتيجة بدون نص."
+      );
+    }
+
+    console.log(
+      "Gemini returned text ✅"
+    );
+
+    console.log(
+      "Text length:",
+      text.length
+    );
+
+    return {
+      text,
+      interactionId:
+        result?.id || null,
+      raw: result
+    };
+
+  } catch (error) {
+
+    if (
+      error?.name ===
+      "AbortError"
+    ) {
+      throw new Error(
+        "انتهى وقت انتظار Gemini. حاول مرة أخرى."
+      );
+    }
+
+    throw error;
+
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/* =====================================================
+   JSON SCHEMA
+===================================================== */
+
+const lessonSchema = {
+
+  type: "object",
+
+  properties: {
+
+    title: {
+      type: "string"
+    },
+
+    summary: {
+      type: "string"
+    },
+
+    explanation: {
+      type: "string"
+    },
+
+    important_points: {
+      type: "array",
+
+      items: {
+        type: "string"
+      }
+    },
+
+    key_terms: {
+      type: "array",
+
+      items: {
+        type: "string"
+      }
+    },
+
+    definitions: {
+
+      type: "array",
+
+      items: {
+
+        type: "object",
+
+        properties: {
+
+          term: {
+            type: "string"
+          },
+
+          definition: {
+            type: "string"
+          }
+
+        },
+
+        required: [
+          "term",
+          "definition"
+        ],
+
+        additionalProperties: false
+      }
+    },
+
+    laws: {
+
+      type: "array",
+
+      items: {
+
+        type: "object",
+
+        properties: {
+
+          name: {
+            type: "string"
+          },
+
+          formula: {
+            type: "string"
+          },
+
+          explanation: {
+            type: "string"
+          }
+
+        },
+
+        required: [
+          "name",
+          "formula",
+          "explanation"
+        ],
+
+        additionalProperties: false
+      }
+    },
+
+    quiz: {
+
+      type: "array",
+
+      items: {
+
+        type: "object",
+
+        properties: {
+
+          type: {
+            type: "string",
+
+            enum: [
+              "written",
+              "multiple",
+              "true_false"
+            ]
+          },
+
+          question: {
+            type: "string"
+          },
+
+          options: {
+
+            type: "array",
+
+            items: {
+              type: "string"
+            }
+          },
+
+          answer: {
+            type: "string"
+          }
+
+        },
+
+        required: [
+          "type",
+          "question",
+          "options",
+          "answer"
+        ],
+
+        additionalProperties: false
+      }
+    }
+
+  },
+
+  required: [
+    "title",
+    "summary",
+    "explanation",
+    "important_points",
+    "key_terms",
+    "definitions",
+    "laws",
+    "quiz"
+  ],
+
+  additionalProperties: false
+};
+
+/* =====================================================
+   تحليل الدرس
+===================================================== */
 
 app.post(
   "/api/analyze",
-  upload.array("images",20),
-  async (req,res) => {
+
+  upload.array(
+    "images",
+    20
+  ),
+
+  async (req, res) => {
 
     try {
 
-      if (
-        !process.env.OPENAI_API_KEY
-      ) {
-        return res.status(500).json({
-          error:
-            "OPENAI_API_KEY غير موجودة في السيرفر."
-        });
+      console.log(
+        "\n========================================"
+      );
+
+      console.log(
+        "ANALYZE REQUEST"
+      );
+
+      console.log(
+        "========================================"
+      );
+
+      if (!GEMINI_API_KEY) {
+
+        return res
+          .status(500)
+          .json({
+
+            success: false,
+
+            error:
+              "GEMINI_API_KEY غير موجود في ملف .env"
+
+          });
       }
 
-      if (
-        !req.files ||
-        !req.files.length
-      ) {
-        return res.status(400).json({
-          error:
-            "لم يتم رفع أي صورة."
-        });
+      const files =
+        req.files || [];
+
+      console.log(
+        "عدد الصور:",
+        files.length
+      );
+
+      if (!files.length) {
+
+        return res
+          .status(400)
+          .json({
+
+            success: false,
+
+            error:
+              "لم يتم إرسال أي صورة."
+
+          });
       }
 
-      const imageContents =
-        req.files.map(file => {
+      const totalSize =
+        files.reduce(
+          (total, file) =>
+            total + file.size,
+          0
+        );
 
-          const base64 =
+      console.log(
+        "حجم الصور:",
+        Math.round(
+          totalSize /
+          1024 /
+          1024 *
+          100
+        ) / 100,
+        "MB"
+      );
+
+      if (
+        totalSize >
+        14 * 1024 * 1024
+      ) {
+
+        return res
+          .status(400)
+          .json({
+
+            success: false,
+
+            error:
+              "حجم الصور كبير جدًا. حاول رفع عدد أقل من الصور."
+
+          });
+      }
+
+      /* =====================================
+         بناء المدخلات
+      ===================================== */
+
+      const input = [];
+
+      input.push({
+
+        type: "text",
+
+        text: `
+أنت الآن تقوم بتحليل درس مدرسي من عدة صور.
+
+حلل جميع الصور المرفقة على أنها صفحات من نفس الدرس.
+
+اقرأ النص الموجود في الصور بدقة شديدة.
+
+إذا كانت هناك عدة صفحات، اربط المعلومات الموجودة بينها.
+
+المطلوب منك إنشاء تحليل دراسي كامل باللغة العربية.
+
+أخرج:
+
+1. عنوان الدرس.
+
+2. ملخص الدرس:
+ملخص واضح ومفيد وليس مجرد نسخ للنص.
+
+3. الشرح المبسط:
+اشرح الدرس بطريقة سهلة يفهمها الطالب.
+
+4. أهم النقاط:
+استخرج أهم الأفكار التي يجب على الطالب حفظها وفهمها.
+
+5. المصطلحات المهمة:
+استخرج المصطلحات الأساسية الموجودة في الدرس.
+
+6. التعاريف:
+استخرج التعريفات الموجودة في الصور.
+
+7. القوانين والمعادلات:
+استخرج القوانين والمعادلات الموجودة في الصور.
+إذا لم توجد قوانين، اجعل القائمة فارغة.
+
+8. الاختبار:
+أنشئ اختبارًا من محتوى الدرس فقط.
+
+يجب أن يكون الاختبار متنوعًا:
+
+- أسئلة كتابية.
+- أسئلة اختيار من متعدد.
+- أسئلة صح وخطأ.
+
+اجعل الأسئلة طبيعية وتشبه الاختبارات المدرسية الحقيقية.
+
+لا تستخدم أسئلة ركيكة مثل:
+"ما هو المصطلح؟"
+
+اكتب أسئلة طبيعية مثل:
+"ما اسم المرحلة التي تحدث فيها ...؟"
+
+لأسئلة الاختيار من متعدد:
+ضع 4 خيارات.
+
+لأسئلة صح وخطأ:
+ضع الخيارين:
+صح
+خطأ
+
+للأسئلة الكتابية:
+اجعل options مصفوفة فارغة.
+
+مهم جدًا:
+
+لا تخترع معلومات غير موجودة في الصور.
+
+إذا لم تجد تعريفًا واضحًا:
+لا تخترع تعريفًا.
+
+إذا لم تجد قانونًا:
+اجعل laws فارغة.
+
+إذا كانت الصورة غير واضحة:
+لا تخمن.
+
+إذا وجدت جدولًا أو مخططًا:
+حاول فهمه واستخدم معلوماته.
+
+أنشئ على الأقل 10 أسئلة في الاختبار إذا كان محتوى الدرس يسمح بذلك.
+
+النتيجة يجب أن تكون باللغة العربية.
+
+التزم تمامًا بالـ JSON Schema.
+`
+      });
+
+      /* =====================================
+         إضافة الصور
+      ===================================== */
+
+      for (const file of files) {
+
+        console.log(
+          "إضافة صورة:",
+          file.originalname,
+          file.mimetype,
+          file.size
+        );
+
+        input.push({
+
+          type: "image",
+
+          mime_type:
+            file.mimetype ||
+            "image/jpeg",
+
+          data:
             file.buffer.toString(
               "base64"
-            );
+            )
 
-          const dataUrl =
-            `data:${file.mimetype};base64,${base64}`;
-
-          return {
-            type: "input_image",
-            image_url: dataUrl,
-            detail: "high"
-          };
         });
+      }
 
-      const instructions = `
-أنت Study AI، مساعد تعليمي ذكي.
+      /* =====================================
+         System Instruction
+      ===================================== */
 
-مهمتك تحليل صور الدرس المرفقة وفهم محتواها بشكل دلالي، وليس مجرد قراءة النص.
+      const systemInstruction = `
+أنت Study AI.
 
-قواعد مهمة جدًا:
+أنت مساعد دراسي متخصص في تحليل صور الكتب والدروس المدرسية.
 
-1. افهم جميع الصور معًا باعتبارها درسًا واحدًا.
-2. اعتمد فقط على المعلومات الموجودة في الصور.
-3. لا تخترع معلومات غير موجودة في الدرس.
-4. إذا كانت معلومة غير واضحة، لا تخمن.
-5. اكتب باللغة العربية الواضحة.
-6. اجعل الشرح مناسبًا للطالب وسهل الفهم.
+اقرأ الصور أولًا.
 
-أنشئ JSON فقط بدون Markdown وبدون code fences.
+افهم محتوى الدرس.
 
-الشكل المطلوب:
+ثم استخرج المعلومات المهمة.
 
-{
-  "summary": "ملخص واضح ومختصر للدرس",
-  "explanation": "شرح مبسط للدرس",
-  "important_points": [
-    "نقطة مهمة"
-  ],
-  "key_terms": [
-    "مصطلح"
-  ],
-  "definitions": [
-    {
-      "term": "المصطلح",
-      "definition": "تعريفه"
-    }
-  ],
-  "laws": [
-    {
-      "title": "اسم القانون",
-      "formula": "القانون",
-      "explanation": "شرح بسيط"
-    }
-  ],
-  "quiz": [
-    {
-      "type": "choice",
-      "question": "السؤال",
-      "options": [
-        "الخيار 1",
-        "الخيار 2",
-        "الخيار 3",
-        "الخيار 4"
-      ],
-      "answer": "الإجابة الصحيحة",
-      "accepted_answers": []
-    },
-    {
-      "type": "truefalse",
-      "question": "العبارة",
-      "options": [
-        "صح",
-        "خطأ"
-      ],
-      "answer": "صح",
-      "accepted_answers": []
-    },
-    {
-      "type": "written",
-      "question": "سؤال كتابي",
-      "options": [],
-      "answer": "الإجابة",
-      "accepted_answers": [
-        "إجابة بديلة"
-      ]
-    }
-  ]
-}
+يجب أن تكون جميع المعلومات مبنية على الصور المرسلة.
 
-قواعد الاختبار:
+لا تخترع معلومات.
 
-- أنشئ من 10 إلى 15 سؤالًا عندما يسمح محتوى الدرس.
-- اجعل الأسئلة متنوعة.
-- استخدم اختيار من متعدد.
-- استخدم صح وخطأ.
-- استخدم أسئلة كتابية.
-- يمكن أن تتضمن الأسئلة:
-  - اشرح.
-  - علل.
-  - قارن.
-  - استنتج.
-  - احسب إذا كان هناك قانون أو أرقام.
-  - ما السبب؟
-  - ما النتيجة؟
-- أسئلة الاختيار من متعدد يجب أن تحتوي على 4 خيارات بالضبط.
-- يجب أن تكون هناك إجابة صحيحة واحدة.
-- أسئلة صح وخطأ يجب أن تحتوي على:
-  ["صح","خطأ"]
-- الأسئلة الكتابية يجب أن تحتوي على answer و accepted_answers.
-- لا تضف قوانين إذا لم توجد قوانين واضحة في الصور.
-- لا تضف تعاريف إذا لم توجد تعاريف واضحة.
+اكتب باللغة العربية.
+
+أنشئ ملخصًا وشرحًا مبسطًا ونقاطًا مهمة ومصطلحات وتعريفات وقوانين واختبارًا.
+
+الاختبار يجب أن يكون متنوعًا:
+كتابي + اختيار من متعدد + صح وخطأ.
+
+اجعل الأسئلة مشابهة لأسئلة الاختبارات المدرسية الحقيقية.
+
+التزم بالـ JSON Schema حرفيًا.
 `;
 
+      /* =====================================
+         Gemini
+      ===================================== */
 
-      const response =
-        await openai.responses.create({
+      const result =
+        await callGemini({
 
-          model:
-            process.env.OPENAI_MODEL ||
-            "gpt-5.6-luna",
+          input,
 
-          instructions,
+          systemInstruction,
 
-          input: [
-            {
-              role: "user",
+          responseFormat: {
 
-              content: [
-                {
-                  type: "input_text",
+            type: "text",
 
-                  text:
-                    "حلل جميع صور الدرس المرفقة معًا. افهم محتوى الدرس ثم أنشئ الملخص والشرح وأهم النقاط والمصطلحات والتعاريف والقوانين والاختبار حسب التعليمات."
-                },
+            mime_type:
+              "application/json",
 
-                ...imageContents
-              ]
-            }
-          ]
+            schema:
+              lessonSchema
+          },
+
+          timeoutMs: 120000
         });
 
+      console.log(
+        "تم استلام نتيجة Gemini ✅"
+      );
 
-      const raw =
-        response.output_text || "";
+      /* =====================================
+         تحويل JSON
+      ===================================== */
 
-      const jsonText =
-        cleanJsonText(raw);
-
-      let parsed;
+      let data;
 
       try {
 
-        parsed =
-          JSON.parse(jsonText);
+        data =
+          parseGeminiJSON(
+            result.text
+          );
 
-      } catch (parseError) {
+      } catch (error) {
 
         console.error(
-          "JSON PARSE ERROR:",
-          parseError
+          "فشل تحويل JSON:"
         );
 
         console.error(
-          "MODEL OUTPUT:",
-          raw
+          result.text
         );
 
-        return res.status(500).json({
-          error:
-            "الذكاء الاصطناعي أرسل نتيجة غير صالحة. حاول مرة أخرى."
-        });
+        throw error;
       }
 
-      const result =
-        normalizeStudyData(parsed);
+      /* =====================================
+         حماية البيانات
+      ===================================== */
 
-      res.json(result);
+      if (
+        typeof data !==
+        "object" ||
+        data === null
+      ) {
 
-    } catch(error) {
+        throw new Error(
+          "نتيجة Gemini ليست كائن JSON."
+        );
+      }
+
+      data.title =
+        String(
+          data.title ||
+          "تحليل الدرس"
+        );
+
+      data.summary =
+        String(
+          data.summary ||
+          ""
+        );
+
+      data.explanation =
+        String(
+          data.explanation ||
+          ""
+        );
+
+      data.important_points =
+        Array.isArray(
+          data.important_points
+        )
+          ? data.important_points
+          : [];
+
+      data.key_terms =
+        Array.isArray(
+          data.key_terms
+        )
+          ? data.key_terms
+          : [];
+
+      data.definitions =
+        Array.isArray(
+          data.definitions
+        )
+          ? data.definitions
+          : [];
+
+      data.laws =
+        Array.isArray(
+          data.laws
+        )
+          ? data.laws
+          : [];
+
+      data.quiz =
+        Array.isArray(
+          data.quiz
+        )
+          ? data.quiz
+          : [];
+
+      console.log(
+        "========================================"
+      );
+
+      console.log(
+        "ANALYSIS RESULT"
+      );
+
+      console.log(
+        "Title:",
+        data.title
+      );
+
+      console.log(
+        "Summary:",
+        data.summary.length,
+        "characters"
+      );
+
+      console.log(
+        "Important points:",
+        data.important_points.length
+      );
+
+      console.log(
+        "Terms:",
+        data.key_terms.length
+      );
+
+      console.log(
+        "Definitions:",
+        data.definitions.length
+      );
+
+      console.log(
+        "Laws:",
+        data.laws.length
+      );
+
+      console.log(
+        "Quiz:",
+        data.quiz.length
+      );
+
+      console.log(
+        "========================================"
+      );
+
+      /* =====================================
+         إرسال النتيجة للواجهة
+         
+         نرسلها بثلاث صيغ للتوافق
+         مع index.html القديم والجديد
+      ===================================== */
+
+      return res.json({
+
+        success: true,
+
+        data: data,
+
+        analysis: data,
+
+        ...data,
+
+        interactionId:
+          result.interactionId
+      });
+
+    } catch (error) {
 
       console.error(
-        "ANALYZE ERROR:",
+        "\n========================================"
+      );
+
+      console.error(
+        "ANALYZE ERROR"
+      );
+
+      console.error(
+        error?.message ||
         error
       );
 
-      res.status(500).json({
-        error:
-          error?.message ||
-          "حدث خطأ أثناء تحليل الدرس."
-      });
+      console.error(
+        "========================================"
+      );
+
+      return res
+        .status(500)
+        .json({
+
+          success: false,
+
+          error:
+            error?.message ||
+            "حدث خطأ أثناء تحليل الدرس."
+
+        });
     }
   }
 );
 
-/* =========================
-   AI Assistant
-========================= */
+/* =====================================================
+   مساعد الذكاء
+===================================================== */
 
 app.post(
   "/api/chat",
-  async (req,res) => {
+
+  async (req, res) => {
 
     try {
 
+      const {
+        message,
+        lesson
+      } = req.body || {};
+
       if (
-        !process.env.OPENAI_API_KEY
+        !message ||
+        !String(
+          message
+        ).trim()
       ) {
-        return res.status(500).json({
-          error:
-            "OPENAI_API_KEY غير موجودة في السيرفر."
-        });
+
+        return res
+          .status(400)
+          .json({
+
+            success: false,
+
+            error:
+              "اكتب سؤالك أولًا."
+
+          });
       }
 
-      const message =
-        typeof req.body?.message === "string"
-          ? req.body.message.trim()
-          : "";
-
-      const lesson =
-        req.body?.lesson || null;
-
-      if (!message) {
-        return res.status(400).json({
-          error:
-            "اكتب سؤالك أولاً."
-        });
-      }
-
-      let lessonContext =
-        "لا يوجد درس محلل حاليًا.";
+      let lessonText = "";
 
       if (lesson) {
 
-        lessonContext =
-          JSON.stringify(
-            lesson,
-            null,
-            2
-          );
+        lessonText =
+          typeof lesson ===
+          "string"
 
-        /*
-         * حماية إضافية من إرسال بيانات ضخمة جدًا.
-         */
-        if (
-          lessonContext.length > 120000
-        ) {
-          lessonContext =
-            lessonContext.slice(
-              0,
-              120000
-            );
-        }
+            ? lesson
+
+            : JSON.stringify(
+                lesson
+              );
       }
 
-      const instructions = `
-أنت مساعد Study AI التعليمي.
+      const systemInstruction = `
+أنت مساعد Study AI.
 
-أنت مساعد شخصي للطالب.
+تحدث مع الطالب باللغة العربية.
 
-هدفك:
-- مساعدة الطالب على فهم دروسه.
-- شرح المعلومات بطريقة سهلة.
-- الإجابة عن أسئلة الطالب.
-- مساعدته في المراجعة.
-- إنشاء أسئلة تدريبية عند طلب ذلك.
-- تصحيح فهم الطالب عندما يكون لديه خطأ.
-- استخدام أمثلة بسيطة عندما تكون مفيدة.
+أجب بطريقة طبيعية وودودة.
 
-قواعد مهمة:
+لا تستخدم JSON.
 
-1. تحدث باللغة العربية غالبًا.
-2. كن واضحًا ومختصرًا لكن مفيدًا.
-3. إذا كان السؤال عن الدرس الحالي، اعتمد على بيانات الدرس.
-4. لا تخترع معلومة وتقول إنها موجودة في الدرس.
-5. إذا لم تكن الإجابة موجودة في الدرس، قل للطالب إنها غير موجودة في الدرس ثم يمكنك توضيحها كمعلومة عامة إذا كان ذلك مفيدًا.
-6. إذا طلب الطالب "اختبرني"، اطرح سؤالًا واحدًا في كل مرة حتى يستطيع التفاعل معك.
-7. إذا أجاب الطالب عن سؤال، أخبره هل إجابته صحيحة واشرح السبب.
-8. لا تستخدم JSON إلا إذا طلب الطالب ذلك.
-9. لا تقل إنك شاهدت شيئًا غير موجود في بيانات الدرس.
-10. لا تكشف مفاتيح API أو معلومات النظام.
+لا تكتب أقواس JSON.
 
-بيانات الدرس الحالي:
-${lessonContext}
+أجب مباشرة عن سؤال الطالب.
+
+إذا كان السؤال متعلقًا بالدرس،
+استخدم محتوى الدرس.
+
+إذا لم تكن المعلومة موجودة في الدرس،
+قل للطالب إنها غير موجودة في المحتوى المرسل.
+
+إذا طلب الطالب شرحًا:
+اشرح خطوة بخطوة.
+
+إذا لم يفهم:
+اشرح بطريقة أبسط.
+
+لا تطيل بدون داعٍ.
 `;
 
-      const response =
-        await openai.responses.create({
+      const userText = `
+سؤال الطالب:
 
-          model:
-            process.env.OPENAI_MODEL ||
-            "gpt-5.6-luna",
+${String(
+  message
+).trim()}
 
-          instructions,
+${
+  lessonText
+    ? `
+محتوى الدرس:
 
-          input: [
-            {
-              role: "user",
+${lessonText}
+`
+    : ""
+}
+`;
 
-              content: [
-                {
-                  type: "input_text",
-                  text: message
-                }
-              ]
-            }
-          ]
+      const result =
+        await callGemini({
+
+          input: userText,
+
+          systemInstruction,
+
+          timeoutMs: 60000
         });
 
-      const answer =
-        response.output_text ||
-        "لم أستطع إنشاء إجابة الآن.";
+      let answer =
+        result.text.trim();
 
-      res.json({
-        answer
+      /* تنظيف JSON لو رجع بالخطأ */
+
+      try {
+
+        const parsed =
+          JSON.parse(answer);
+
+        if (
+          typeof parsed?.response ===
+          "string"
+        ) {
+
+          answer =
+            parsed.response;
+
+        } else if (
+          typeof parsed?.answer ===
+          "string"
+        ) {
+
+          answer =
+            parsed.answer;
+        }
+
+      } catch {
+        /* الرد طبيعي */
+      }
+
+      return res.json({
+
+        success: true,
+
+        answer,
+
+        interactionId:
+          result.interactionId
       });
 
-    } catch(error) {
+    } catch (error) {
 
       console.error(
-        "AI CHAT ERROR:",
+        "Chat Error:",
+        error?.message ||
         error
       );
 
-      res.status(500).json({
-        error:
-          error?.message ||
-          "حدث خطأ أثناء التواصل مع مساعد الذكاء الاصطناعي."
-      });
+      return res
+        .status(500)
+        .json({
+
+          success: false,
+
+          error:
+            error?.message ||
+            "حدث خطأ في مساعد الذكاء."
+
+        });
     }
   }
 );
 
-/* =========================
-   Multer Error Handler
-========================= */
+/* =====================================================
+   Multer / Server Errors
+===================================================== */
 
 app.use(
-  (error,req,res,next) => {
+  (
+    error,
+    req,
+    res,
+    next
+  ) => {
 
     if (
-      error instanceof multer.MulterError
+      error instanceof
+      multer.MulterError
     ) {
 
-      if (
-        error.code ===
-        "LIMIT_FILE_SIZE"
-      ) {
-        return res.status(400).json({
-          error:
-            "حجم إحدى الصور أكبر من 10MB."
-        });
-      }
+      return res
+        .status(400)
+        .json({
 
-      if (
-        error.code ===
-        "LIMIT_FILE_COUNT"
-      ) {
-        return res.status(400).json({
-          error:
-            "الحد الأقصى 20 صورة."
-        });
-      }
+          success: false,
 
-      return res.status(400).json({
-        error:
-          error.message
-      });
+          error:
+            `خطأ في رفع الملفات: ${error.message}`
+
+        });
     }
 
     if (error) {
 
-      return res.status(400).json({
-        error:
-          error.message ||
-          "حدث خطأ."
-      });
+      console.error(
+        "Server Error:",
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+
+          success: false,
+
+          error:
+            error.message ||
+            "حدث خطأ في السيرفر."
+
+        });
     }
 
     next();
   }
 );
 
-/* =========================
-   Start Server
-========================= */
+/* =====================================================
+   تشغيل السيرفر
+===================================================== */
 
 app.listen(
   PORT,
-  "0.0.0.0",
   () => {
 
     console.log(
-      `Study AI running on port ${PORT}`
+      "========================================"
+    );
+
+    console.log(
+      "          STUDY AI SERVER"
+    );
+
+    console.log(
+      "========================================"
+    );
+
+    console.log(
+      `Port: ${PORT}`
+    );
+
+    console.log(
+      `Model: ${GEMINI_MODEL}`
+    );
+
+    console.log(
+      `API Key: ${
+        GEMINI_API_KEY
+          ? "موجودة ✅"
+          : "غير موجودة ❌"
+      }`
+    );
+
+    console.log(
+      `Website: http://localhost:${PORT}`
+    );
+
+    console.log(
+      "========================================"
     );
   }
 );
