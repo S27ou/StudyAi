@@ -1060,6 +1060,18 @@
       font-size: 11px;
     }
 
+
+    .ai-image-tools{display:flex;align-items:center;gap:8px;padding:0 12px 9px;flex-wrap:wrap}
+    .ai-image-button{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:11px;padding:8px 10px;font-size:11px}
+    .ai-image-button:hover{border-color:var(--primary)}
+    #aiImageInput{display:none}
+    .ai-image-preview{display:flex;gap:7px;overflow:auto;padding:0 12px 9px}
+    .ai-image-chip{position:relative;width:52px;height:52px;flex:0 0 52px;border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--card2)}
+    .ai-image-chip img{width:100%;height:100%;object-fit:cover}
+    .ai-image-chip button{position:absolute;top:2px;left:2px;width:19px;height:19px;border:0;border-radius:6px;background:rgba(0,0,0,.72);color:#fff;line-height:19px;padding:0}
+    .ai-image-status{color:var(--muted);font-size:10px;padding:0 12px 8px;display:none}
+    .ai-image-status.show{display:block}
+
     .ai-input-area {
       padding: 12px;
       border-top: 1px solid var(--border);
@@ -2473,6 +2485,15 @@
 
     </div>
 
+    <div class="ai-image-tools">
+      <input type="file" id="aiImageInput" accept="image/*" multiple>
+      <button class="ai-image-button" type="button" onclick="document.getElementById('aiImageInput').click()">📸 إرفاق صور</button>
+      <button class="ai-image-button" type="button" onclick="analyzeAttachedImages()">🧠 حلل الصور</button>
+      <button class="ai-image-button" type="button" onclick="quizFromAttachedImages()">📝 حوّلها لاختبار</button>
+    </div>
+    <div class="ai-image-preview" id="aiImagePreview"></div>
+    <div class="ai-image-status" id="aiImageStatus"></div>
+
     <div class="ai-input-area">
 
       <textarea
@@ -3585,119 +3606,197 @@
     }
 
     function askAIQuick(message) {
-
       $("aiInput").value = message;
-
       sendAIMessage();
     }
 
-    function addAIMessage(
-      message,
-      type
-    ) {
+    /* =========================
+       AI Image Assistant
+    ========================== */
 
-      const container =
-        $("aiMessages");
+    let aiImageFiles = [];
 
-      const div =
-        document.createElement("div");
+    const aiImageInput = $("aiImageInput");
+    const aiImagePreview = $("aiImagePreview");
+    const aiImageStatus = $("aiImageStatus");
 
-      div.className =
-        `ai-message ${type}`;
+    aiImageInput?.addEventListener("change", e => {
+      addAIImages(e.target.files);
+      e.target.value = "";
+    });
 
-      div.textContent = message;
+    function addAIImages(files) {
+      const images = Array.from(files || []).filter(file => file.type.startsWith("image/"));
+      if (!images.length) {
+        showToast("اختر صورًا فقط 📸");
+        return;
+      }
 
-      container.appendChild(div);
-
-      container.scrollTop =
-        container.scrollHeight;
+      for (const file of images) {
+        if (aiImageFiles.length >= 10) {
+          showToast("الحد الأقصى 10 صور للمساعد.");
+          break;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          showToast(`الصورة ${file.name} أكبر من 10MB`);
+          continue;
+        }
+        aiImageFiles.push(file);
+      }
+      renderAIImagePreview();
     }
 
-    async function sendAIMessage() {
+    function renderAIImagePreview() {
+      aiImagePreview.innerHTML = "";
+      aiImageFiles.forEach((file,index) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const chip = document.createElement("div");
+          chip.className = "ai-image-chip";
+          chip.innerHTML = `
+            <img src="${reader.result}" alt="صورة مرفقة">
+            <button type="button" title="حذف" onclick="removeAIImage(${index})">×</button>
+          `;
+          aiImagePreview.appendChild(chip);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
 
-      const input = $("aiInput");
+    function removeAIImage(index) {
+      aiImageFiles.splice(index,1);
+      renderAIImagePreview();
+    }
 
-      const message =
-        input.value.trim();
+    function clearAIImages() {
+      aiImageFiles = [];
+      renderAIImagePreview();
+      aiImageStatus.classList.remove("show");
+      aiImageStatus.textContent = "";
+    }
 
-      if (!message) return;
+    async function analyzeAIImages(prompt = "حلل هذه الصور كصور درس دراسي، واستخرج أهم المعلومات والتعاريف والقوانين إن وجدت وأنشئ اختبارًا مناسبًا من محتواها.") {
+      if (!aiImageFiles.length) {
+        showToast("أرفق صورة واحدة على الأقل أولًا 📸");
+        return null;
+      }
 
-      input.value = "";
+      aiImageStatus.textContent = "🧠 جاري قراءة الصور وتحليل محتواها...";
+      aiImageStatus.classList.add("show");
 
-      addAIMessage(
-        message,
-        "user"
-      );
+      const formData = new FormData();
+      aiImageFiles.forEach(file => formData.append("images",file));
 
-      $("aiTyping")
-        .classList
-        .add("show");
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        body: formData
+      });
 
+      let data;
       try {
+        data = await response.json();
+      } catch {
+        throw new Error("السيرفر أرسل استجابة غير صالحة.");
+      }
 
-        const response =
-          await fetch(
-            "/api/chat",
-            {
-              method: "POST",
+      if (!response.ok) {
+        throw new Error(data?.error || "حدث خطأ أثناء تحليل الصور.");
+      }
 
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
+      studyData = normalizeStudyData(data?.data || data);
+      renderStudyData(studyData);
+      $("results").style.display = "block";
+      updateLessonCount();
+      aiImageStatus.textContent = "✅ تم فهم الصور وتحويلها إلى بيانات الدرس.";
+      return studyData;
+    }
 
-              body: JSON.stringify({
-                message: message,
-                lesson: studyData
-              })
-            }
-          );
-
-        let data;
-
-        try {
-          data =
-            await response.json();
-        } catch {
-          throw new Error(
-            "استجابة غير صالحة من السيرفر."
-          );
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            data?.error ||
-            "حدث خطأ في المساعد."
-          );
-        }
-
-        addAIMessage(
-          data?.answer ||
-          "ما قدرت أطلع إجابة الآن.",
-          "bot"
-        );
-
+    async function analyzeAttachedImages() {
+      try {
+        await analyzeAIImages();
+        showToast("تم تحليل الصور بنجاح 🎉");
       } catch(error) {
-
         console.error(error);
-
-        addAIMessage(
-          "❌ " +
-          (
-            error.message ||
-            "حدث خطأ أثناء الاتصال بالمساعد."
-          ),
-          "bot"
-        );
-
-      } finally {
-
-        $("aiTyping")
-          .classList
-          .remove("show");
+        aiImageStatus.textContent = "❌ " + (error.message || "تعذر تحليل الصور.");
+        showToast(error.message || "تعذر تحليل الصور.");
       }
     }
 
+    async function quizFromAttachedImages() {
+      try {
+        const data = await analyzeAIImages("حلل الصور واستخرج محتوى الدرس ثم أنشئ اختبارًا مدرسيًا متنوعًا من المعلومات الظاهرة فقط، ويشمل اختيار من متعدد وصح وخطأ وأسئلة كتابية عند توفر محتوى مناسب.");
+        if (!data) return;
+        scrollToSection("results");
+        addAIMessage("📝 جهزت لك اختبارًا من محتوى الصور. ستجده في قسم الاختبار بالأسفل.","bot");
+        showToast("تم إنشاء الاختبار من الصور 📝");
+        clearAIImages();
+      } catch(error) {
+        console.error(error);
+        aiImageStatus.textContent = "❌ " + (error.message || "تعذر إنشاء الاختبار.");
+        showToast(error.message || "تعذر إنشاء الاختبار.");
+      }
+    }
+
+    function addAIMessage(message,type) {
+      const container = $("aiMessages");
+      const div = document.createElement("div");
+      div.className = `ai-message ${type}`;
+      div.textContent = message;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendAIMessage() {
+      const input = $("aiInput");
+      let message = input.value.trim();
+      const hasImages = aiImageFiles.length > 0;
+
+      if (!message && !hasImages) return;
+
+      if (!message && hasImages) {
+        message = "حلل الصور المرفقة، استخرج أهم المعلومات منها، وإذا كان مناسبًا أنشئ لي أسئلة اختبار من نفس المحتوى.";
+      }
+
+      input.value = "";
+      addAIMessage(message,"user");
+      $("aiTyping").classList.add("show");
+
+      try {
+        if (hasImages) {
+          await analyzeAIImages(message);
+          clearAIImages();
+        }
+
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message,
+            lesson: studyData
+          })
+        });
+
+        let data;
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error("استجابة غير صالحة من السيرفر.");
+        }
+
+        if (!response.ok) {
+          throw new Error(data?.error || "حدث خطأ في المساعد.");
+        }
+
+        addAIMessage(data?.answer || data?.response || "ما قدرت أطلع إجابة الآن.","bot");
+      } catch(error) {
+        console.error(error);
+        addAIMessage("❌ " + (error.message || "حدث خطأ أثناء الاتصال بالمساعد."),"bot");
+      } finally {
+        $("aiTyping").classList.remove("show");
+      }
+    }
 
     /* =========================
        Study Plan
